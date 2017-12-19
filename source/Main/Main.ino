@@ -6,8 +6,9 @@
 #include <Keypad.h>
 
 /*-----( Defines and utiliities )-----*/
-//typedef unsigned int uint;
-//typedef unsigned byte ubyte;
+
+#define lengthLB 60
+#define lengthUB 25000
 /*-----( Declare Constants )-----*/
 // keypad constants
 const byte ROWS = 4; // four Rows
@@ -74,12 +75,11 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
       String tmpStr = lcdQuestionsArray[i];
       String sub1 = tmpStr.substring(0,16);
       String sub2 = tmpStr.substring(16);
+      //trims the second sentence to avoid white spaces
       sub2.trim();
-      lcd.setCursor(0,0);
-      lcd.print(sub1);
-      lcd.setCursor(0,1);
-      lcd.print(sub2);
-      delay(2000);
+      // Prints out the questions
+      //          Msg1,Msg2,lcdPos ,delay  
+      lcd2LineMsg(sub1,sub2,0,0,0,1,0,2000);
       while(!Serial.available()){};
         if (Serial.available()) {    
           // wait a bit for the entire message to arrive
@@ -87,19 +87,24 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
           // clear the screen
           lcd.clear();
           // read all the available characters
-          while (Serial.available() > 0) { 
-                   
-            serialReadAnswear+= (char)Serial.read(); 
-                   
+          while (Serial.available() > 0) {                    
+            serialReadAnswear+= (char)Serial.read();                    
           }
-          
-//          lcd.write(serialReadAnswear.c_str());
+          //avoid null char '\0' at the end of the sentence          
           serialReadAnswear = serialReadAnswear.substring(0,serialReadAnswear.length()-1);
-          Serial.print(i);
           delay(10);
           switch (i){
             case 0:
-              checkSerialAns(i,serialReadAnswear,60,25000,"Length");
+              checkSerialAns(i,serialReadAnswear,lengthLB,lengthUB,"Length");
+              break;
+            case 0:
+              checkSerialAns(i,serialReadAnswear,lengthLB,lengthUB,"Width");
+              break;
+            case 0:
+              checkSerialAns(i,serialReadAnswear,lengthLB,lengthUB,"Length");
+              break;
+            case 0:
+              checkSerialAns(i,serialReadAnswear,lengthLB,lengthUB,"Length");
               break;                    
           }          
           delay(500);              
