@@ -1,11 +1,29 @@
-/* Main.ino */
+/* @Main.ino
+||  This is the Main.ino. In this file you can find code based on lcd, keypad ... libraries.
+||  It is developed and maintained by Petros Chatzipetrou.
+||  It is a project in frames of the course TELO_3.
+||  It is started on 18.12.2017
+*/
 
 /*-----( Import needed libraries )-----*/
+
 #include <Wire.h>  // Comes with Arduino IDE
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
 
-/*-----( Defines and utiliities )-----*/
+/*----------( END_OF_IMPORT_LIBRARIES ) ----------*/
+
+/*-----( #defines and utiliities )-----*/
+
+typedef unsigned int uint;
+
+#define LCD_CLEAR 1 // usefull for 1lineMsg if u want to use lcd.clear cmd or not
+#define LCD_NO_CLEAR 0 // and this one if you dont want to use lcd.cler cmd 
+
+#define delay2K 2000 // 2k delay on a variety of functions
+#define delay1K 1000 // 1k delay on a variety of functions
+#define delay1_5K 1500 // 1.5k delay on a variety of functions
+
 //      length lower-upper bounds
 #define lengthLB 60
 #define lengthUB 25000
@@ -16,11 +34,21 @@
 #define numbOfTreesLB 1
 #define numbOfTreesUB 6
 
+/*----------( END_OF_#DEFINES_AND_UTILITIES_DECLARATIONS ) ----------*/
+
 /*-----( Declare Constants )-----*/
 // keypad constants
-const byte ROWS = 4; // four Rows
-const byte COLS = 4; // four Columns
-char keys[ROWS][COLS] = {
+const byte ROWS(4); // number of Rows of keypad
+const byte COLS(4); // nuber of Columns of keypad
+
+const byte numbOfQuestions(5); // number of the array in lcdQuestionsArray 
+const byte numbOfAnswears(5); // number of the array in lcdAnswearsArray
+
+/*----------( END_OF_CONSTANTS_DECLARATIONS ) ----------*/
+
+/*-----( Declare Variables )-----*/
+
+char keys[ROWS][COLS] = {// overview of the keypad keys that we need for object declaration
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
   {'7', '8', '9', 'C'},
@@ -28,9 +56,23 @@ char keys[ROWS][COLS] = {
 };
 byte rowPins[ROWS] = {13, 12, 11, 10}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {9, 8, 7, 6}; //connect to the column pinouts of the keypad
+String lcdQuestionsArray[numbOfQuestions] = { // overview of Questions displayed to the User
+  "Give the desired length",
+  "Give the desired width",
+  "Give the desired number of trees",
+  "Manually plant rate? Y(#)/N(*)",
+  "Give the desired plant rate"
+};
+String lcdAnswearsArray[numbOfAnswears] = { } ; // here we will keep the answears of User
+String serialReadAnswear = "";// initialise the var that keeps temporar answear of User
+String passwords[] = {"1111", "0000"}; //1111 User Mode , 0000 Maintenance Mode
+String mode[] = {"User", "Maintenance"};
+char elegalCharsArray[] = {'B', '*', '#'};
 
+/*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
 /*-----( Declare objects )-----*/
+
 // set the LCD address to 0x27 for a 16 chars 2 line display
 //                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
@@ -38,43 +80,34 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 // check API at https://playground.arduino.cc/Code/Keypad#Download
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
-/*-----( Declare Variables )-----*/
-unsigned int tmpVal(0);
-unsigned int fieldLength(0);
-char elegalCharsArray[] = {'B', '*', '#'};
-String lcdQuestionsArray[5] = {
-  "Give the desired length",
-  "Give the desired width",
-  "Give the desired number of trees",
-  "Manually plant rate? Y(#)/N(*)",
-  "Give the desired plant rate"
-};
-//1111 User Mode , 0000 Maintenance Mode
-String passwords[] = {"1111", "0000"};
-String mode[] = {"User", "Maintenance"};
-String answearsArray[5] ;
-String serialReadAnswear = "";
-boolean runOnce = true;
-boolean resetButtonPressed = false;
-boolean stringComplete = false;
-char tmpBuff[100];
+/*----------( END_OF_OBJECT_DECLARATIONS ) ----------*/
 
 /*-----( Declare Functions )-----*/
 
 void clearSetCursorAt(byte AT_CHAR , byte AT_LINE );
 void initialize();
-void serialEvent();
+// checks if serial is available and read seiral monitor
 void ckSerialToReadAns(String& serialReadAnswear);
-void checkSerialAns(int& counter, String serialAns, unsigned int firstBound, unsigned int secondBound, String lengthWidthNumbTrees);
-void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, unsigned int Delay = 0);
-void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, unsigned int msg1Delay = 0, unsigned int msg2Delay = 0);
+// check if serial is available and then check the bounds of each question 
+void checkSerialAns(int& counter, String serialAns, uint firstBound, uint secondBound, String lengthWidthNumbTrees);
 
-/*----------( END OF DECLARATIONS ) ----------*/
+void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay, bool lcdClear );
+void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay , uint msg2Delay );
+
+void keypadEvent(KeypadEvent key); // the system goes through this code every time a key is pressed
+bool isNumb(KeypadEvent key); // check if the letter is number or not
+bool isAlpha(KeypadEvent key); // check if the letter is Alpha or not
+
+
+/*----------( END_OF_FUNCTION_DECLARATIONS ) ----------*/
+
+
 
 void setup()   /*----( SETUP: RUNS ONCE )----*/
 {
   Serial.begin(9600);  // Used to type in characters
-  lcd.begin(16, 2);
+  lcd.begin(16, 2); // initialize the dimensions of display
+  keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
   // start writing the answears on lcd
   for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++) {
     lcd.clear();
@@ -86,7 +119,7 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
       sub2.trim();
       // Prints out the questions
       //          Msg1,Msg2,lcdPos ,delay
-      lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, 2000);
+      lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, delay2K);
       // w8 till Serial is available
       while (!Serial.available()) {};
       if (Serial.available()) {
@@ -117,7 +150,7 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
       }
     } else {
       lcd.print(lcdQuestionsArray[i]);
-      delay(1000);
+      delay(delay1K);
       lcd.clear();
     }
 
@@ -134,35 +167,96 @@ void loop()   /*----( LOOP: RUNS CONSTANTLY )----*/
 }/* --(end main loop )-- */
 
 /* ( Function Definition ) */
-void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, unsigned int Delay = 0) {
-  
+bool isNumb(KeypadEvent key){
+  for(byte i(0); i < ROWS; i++){
+    for(byte j(0); j < COLS-1; j++){
+      if(keys[i][j] == key){
+        // test if it works like that else replace  with break and tmpVars
+        return true;
+      }
+    }
+  }
+  return false;
+};
+bool isAlpha(KeypadEvent key){
+  for(byte i(0); i < ROWS; i++){
+    for(byte j(COLS-1); j < COLS; j++){
+      if(keys[i][j] == key){
+        // test if it works like that else replace  with break and tmpVars
+        return true;
+      }
+    }
+  }
+  return false;
+};
+void keypadEvent(KeypadEvent key) {
+  switch (keypad.getState()){
+  case PRESSED:
+      if (key == isNumb(key)) {
+          if(key != '*' && key != '#'){
+            //concat the key to serialReadAnswear
+            serialReadAnswear += (char)key;
+          }else if(key == '*'){
+            //TODO smth with asterisk letter fo keypad
+          }else{// key == '#'
+            //TODO smth with # symbol 
+          }
+      }else if(key == isAlpha(key)){
+        //TODO do smth to hadnle letters
+        switch (key){
+          case 'A':
+          break;
+          case 'B':
+          break;
+          case 'C':
+          break;
+          case 'D':
+          break;
+          default: //IN case somth goes to this option catch it
+          break;
+        }
+      }
+      break;
+  // case RELEASED: // these are useless right now
+      // if (key == '#') {
+      //   // digitalWrite(ledPin,!digitalRead(ledPin));
+      //   // ledPin_state = digitalRead(ledPin);        // Remember LED state, lit or unlit.
+      // }
+  //     break;
+  // case HOLD:
+  //     break;
+  }
+}
+
+void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 0, bool lcdClear = LCD_NO_CLEAR ) {
+  if(lcdClear){
+    lcd.clear();
+  };
   lcd.setCursor( cursorCharAt, cursorLineAt);
   lcd.print(msg);
   delay(Delay);
 }
-void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, unsigned int msg1Delay = 0, unsigned int msg2Delay = 0) { //TODO write this function and continue for the lcs1LineMsg and commit to gitlab
-  lcd.clear();
-  lcd1LineMsg(firstMsg, msg1CursorCharAt, msg1CursorLineAt, msg1Delay);
+void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay = 0, uint msg2Delay = 0) { //TODO write this function and continue for the lcs1LineMsg and commit to gitlab
+  lcd1LineMsg(firstMsg, msg1CursorCharAt, msg1CursorLineAt, msg1Delay, LCD_CLEAR);
   lcd1LineMsg(secondMsg, msg2CursorCharAt, msg2CursorLineAt, msg2Delay);
 }
 
-void checkSerialAns(int& counter, String serialAns, unsigned int firstBound, unsigned int secondBound, String lengthWidthNumbTrees) {
+void checkSerialAns(int& counter, String serialAns, uint firstBound, uint secondBound, String lengthWidthNumbTrees) {
   // tmpAns exists to avoid decreasing counter twise
   bool tmpAns = false;
   if (serialAns.toInt() < firstBound || serialAns.toInt() > secondBound) {
     //check serial.length() in case user pressed enter without any value
     if (serialAns.length() < 1) {
-      lcd2LineMsg("You must write", "a value...", 0, 0, 0, 1, 0, 2000);
+      lcd2LineMsg("You must write", "a value...", 0, 0, 0, 1, 0, delay2K);
       --counter;
       tmpAns = true;
     }//end of serialAns.length()<1
     if (!tmpAns) {
-      lcd2LineMsg(lengthWidthNumbTrees + ":" + serialReadAnswear + "cm", "Out of bounds...", 0, 0, 0, 1, 0, 2000);
-      lcd.clear();
-      lcd1LineMsg("Try again...",0,0,1500);
+      lcd2LineMsg(lengthWidthNumbTrees + ":" + serialReadAnswear + "cm", "Out of bounds...", 0, 0, 0, 1, 0, delay2K);
+      lcd1LineMsg("Try again...", 0, 0, delay1_5K, LCD_CLEAR);
       // tmp is helpfull to turn the whole sentense that we wanna use into type String
       String lastSentenceToString = ((String)firstBound + "<" + lengthWidthNumbTrees + "<" + (String)secondBound);
-      lcd2LineMsg("Bounds between",lastSentenceToString,0,0,0,1,0,2000);
+      lcd2LineMsg("Bounds between", lastSentenceToString, 0, 0, 0, 1, 0, delay2K);
       --counter;
     }
     lcd.clear();
@@ -184,39 +278,9 @@ void ckSerialToReadAns(String& serialReadAnswear) {
   //detracked null char '\0' at the end of the sentence
   serialReadAnswear = serialReadAnswear.substring(0, serialReadAnswear.length() - 1);
   delay(10);
-  
-  // if (Serial.available()) {
-  //   // wait a bit for the entire message to arrive
-  //   delay(10);
-  //   // clear the screen
-  //   lcd.clear();
-  //   // read all the available characters
-  //   while (Serial.available() > 0) {
-  //     serialReadAnswear += (char)Serial.read();
-
-  //   }
-  //   lcd.write(serialReadAnswear.c_str());
-  //   delay(1000);
-
-  //   Serial.println(serialReadAnswear);
-  //   serialReadAnswear = "";
-  //   //      stringComplete = true;
-  // }
 }
 
-void serialEvent() {
-  while (Serial.available()) {
-    // get the new byte:
-    char inChar = (char)Serial.read();
-    // add it to the inputString:
-    serialReadAnswear += inChar;
-    // if the incoming character is a newline, set a flag so the main loop can
-    // do something about it:
-    if (inChar == '\n') {
-      stringComplete = true;
-    }
-  }
-}
+
 
 void clearSetCursorAt(byte AT_CHAR = 0, byte AT_LINE = 0) {
   lcd.clear();
@@ -256,96 +320,8 @@ void initialize() {
         delay(500);
       }
     }
-    //  while (!passWordValid(serialReadAnswear)){ }
-    //   }else{lcd.print("Serial problem");}
   }
 }
 
 
 
-
-
-bool passWordValid(char* serialReadAnsw ) {
-  //  clearSetCursorAt();
-  //  lcd.print("Give the password...");
-  //  *serialReadAnswear = Serial.read();
-  //  for(byte i = 0 ; i < (sizeof(passwords) / sizeof(passwords[0])); i++){
-  //    if(*serialReadAnsw == *passwords[i]){
-  //      clearSetCursorAt();
-  //      lcd.print("You are loged in as ");
-  //      lcd.setCursor(0,1);
-  //      lcd.print(mode[i]);
-  //      return true;
-  //    }
-  //  }
-  //  clearSetCursorAt();
-  //  lcd.print("Wrong password..");
-  //  return false;
-}
-
-
-
-//  if (Serial.available()) {
-//      // wait a bit for the entire message to arrive
-//      delay(100);
-//      // clear the screen
-//      lcd.clear();
-//      // read all the available characters
-//      while (Serial.available() > 0) {
-//        // display each character to the LCD
-//        lcd.write(Serial.read());
-//      }
-//    }
-//  Serial.begin(9600);  // Used to type in characters
-//
-//  lcd.begin(16,2);   // initialize the lcd for 16 chars 2 lines, turn on backlight
-
-// ------- Quick 3 blinks of backlight  -------------
-//  for(int i = 0; i< 3; i++)
-//  {
-//    lcd.backlight();
-//    delay(250);
-//    lcd.noBacklight();
-//    delay(250);
-//  }
-//  lcd.backlight(); // finish with backlight on
-
-//-------- Write characters on the display ------------------
-// NOTE: Cursor Position: (CHAR, LINE) start at 0
-//  lcd.setCursor(0,0); //Start at character 4 on line 0
-//  lcd.print("Hello, world!");
-//  delay(1000);
-//  lcd.setCursor(0,1);
-//  lcd.print("HI!YourDuino.com");
-//  delay(8000);
-
-// Wait and then tell user they can start the Serial Monitor and type in characters to
-// Display. (Set Serial Monitor option to "No Line Ending")
-//  lcd.clear();
-//  lcd.setCursor(0,0); //Start at character 0 on line 0
-//  lcd.print("Use Serial Mon");
-//  lcd.setCursor(0,1);
-//  lcd.print("Type to display");
-
-
-
-
-
-
-
-//  Serial.print(serialReadAnswear);
-//  delay(2000);
-//  {
-//    // when characters arrive over the serial port...
-//    if (Serial.available()) {
-//      // wait a bit for the entire message to arrive
-//      delay(100);
-//      // clear the screen
-//      lcd.clear();
-//      // read all the available characters
-//      while (Serial.available() > 0) {
-//        // display each character to the LCD
-//        lcd.write(Serial.read());
-//      }
-//    }
-//  }
