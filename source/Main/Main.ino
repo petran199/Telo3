@@ -68,6 +68,10 @@ String serialReadAnswear = "";// initialise the var that keeps temporar answear 
 String passwords[] = {"1111", "0000"}; //1111 User Mode , 0000 Maintenance Mode
 String mode[] = {"User", "Maintenance"};
 char elegalCharsArray[] = {'B', '*', '#'};
+bool isEnterActive(false);
+String lcdTypingSentences[numbOfQuestions] = {
+  "Length: ", "Width: ", "Num trees:","","plant rate: "
+};   
 
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
@@ -110,49 +114,81 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
   keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
   // start writing the answears on lcd
   for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++) {
-    lcd.clear();
+    isEnterActive = false;
     if (lcdQuestionsArray[i].length() > 16) {
+      
       String tmpStr = lcdQuestionsArray[i];
       String sub1 = tmpStr.substring(0, 16);
       String sub2 = tmpStr.substring(16);
       //trims the second sentence to avoid white spaces
       sub2.trim();
+    
       // Prints out the questions
       //          Msg1,Msg2,lcdPos ,delay
-      lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, delay2K);
-      // w8 till Serial is available
-      while (!Serial.available()) {};
-      if (Serial.available()) {
-        //checks Serial and read/write all values to var serialReadAnswear
-        ckSerialToReadAns(serialReadAnswear);
-        switch (i) {
-          case 0:
-            //checks for bounds and take apropriate descision
-            checkSerialAns(i, serialReadAnswear, lengthLB, lengthUB, "Length");
-            break;
-          case 1:
-            checkSerialAns(i, serialReadAnswear, widthLB, widthUB, "Width");
-            break;
-          case 2:
-            checkSerialAns(i, serialReadAnswear, numbOfTreesLB, numbOfTreesUB, "Numb trees");
-            break;
-          case 3:
-            //TODO write smth to chech manually plant rate Y/N
-            break;
-          default:
-          //TODO write smth else or find the lower-upper bounds
-            //checkSerialAns(i, serialReadAnswear, lengthLB, lengthUB, "Plant rate");
-            break;
-        }
-        delay(100);
-        // just empty the var to begin with new question
-        serialReadAnswear = "";
-      }
-    } else {
-      lcd.print(lcdQuestionsArray[i]);
-      delay(delay1K);
-      lcd.clear();
+     lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, delay2K);
     }
+     lcd1LineMsg(lcdTypingSentences[i],0,0,0,LCD_CLEAR);
+     bool firstTime(true);
+      while(!isEnterActive){
+        char key = keypad.getKey();
+
+        // if(key){
+        //   if(serialReadAnswear.length()>=5){
+            
+        //     if(firstTime){
+        //       lcd2LineMsg(lcdTypingSentences[i],serialReadAnswear +"cm",0,0,lcdTypingSentences[i].length()-1,0,0,500);
+        //       firstTime = false;
+        //     }else{
+        //       lcd2LineMsg("too many digits...","Press C to clear",0,0,0,1,0,1500);
+        //       lcd2LineMsg(lcdTypingSentences[i],serialReadAnswear +"cm",0,0,lcdTypingSentences[i].length()-1,0,0,10);
+        //     }
+           
+            
+        //   }else{
+        //     firstTime = true;
+        //     lcd2LineMsg(lcdTypingSentences[i],(serialReadAnswear.length()>0)?serialReadAnswear +"cm":serialReadAnswear,0,0,lcdTypingSentences[i].length()-1,0,0,10);
+        //   }
+
+      }
+      lcd.clear();
+      lcd.print("MALAKES");
+      delay(2000);
+        
+        // lcd1LineMsg(serialReadAnswear,lcdTypingSentences[i].length(),0,100,LCD_NO_CLEAR);
+      // }
+      // w8 till Serial is available
+      // while (!Serial.available()) {};
+      // if (Serial.available()) {
+        //checks Serial and read/write all values to var serialReadAnswear
+        // ckSerialToReadAns(serialReadAnswear);
+//        switch (i) {
+//          case 0:
+//            //checks for bounds and take apropriate descision
+//            checkSerialAns(i, serialReadAnswear, lengthLB, lengthUB, "Length");
+//            break;
+//          case 1:
+//            checkSerialAns(i, serialReadAnswear, widthLB, widthUB, "Width");
+//            break;
+//          case 2:
+//            checkSerialAns(i, serialReadAnswear, numbOfTreesLB, numbOfTreesUB, "Numb trees");
+//            break;
+//          case 3:
+//            //TODO write smth to chech manually plant rate Y/N
+//            break;
+//          default:
+//          //TODO write smth else or find the lower-upper bounds
+//            //checkSerialAns(i, serialReadAnswear, lengthLB, lengthUB, "Plant rate");
+//            break;
+//        }
+//        delay(100);
+        // just empty the var to begin with new question
+//        serialReadAnswear = "";
+      // }
+    // } else {
+    //   lcd.print(lcdQuestionsArray[i]);
+    //   delay(delay1K);
+    //   lcd.clear();
+    // }
 
   }
 }/*--(end setup )---*/
@@ -191,31 +227,44 @@ bool isAlpha(KeypadEvent key){
 };
 void keypadEvent(KeypadEvent key) {
   switch (keypad.getState()){
-  case PRESSED:
-      if (key == isNumb(key)) {
-          if(key != '*' && key != '#'){
-            //concat the key to serialReadAnswear
-            serialReadAnswear += (char)key;
-          }else if(key == '*'){
-            //TODO smth with asterisk letter fo keypad
-          }else{// key == '#'
-            //TODO smth with # symbol 
+    case PRESSED:
+      if (isNumb(key)) {
+        if(key != '*' && key != '#'){
+          //concat the key to serialReadAnswear
+          if(serialReadAnswear.length()<5){//5 chars max
+            serialReadAnswear += key;
           }
-      }else if(key == isAlpha(key)){
+        }else if(key == '*'){
+          Serial.print("key = *");
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("*****");
+          //TODO smth with asterisk letter fo keypad
+        }else{// key == '#'
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("##");
+          //TODO smth with # symbol 
+        }
+      }else if(isAlpha(key)){
         //TODO do smth to hadnle letters
         switch (key){
           case 'A':
+          isEnterActive = true;
           break;
           case 'B':
           break;
           case 'C':
+          if(serialReadAnswear.length()>0){//5 chars max
+            serialReadAnswear = serialReadAnswear.substring(0, serialReadAnswear.length() - 1);
+          }
           break;
           case 'D':
           break;
           default: //IN case somth goes to this option catch it
           break;
         }
-      }
+     }
       break;
   // case RELEASED: // these are useless right now
       // if (key == '#') {
