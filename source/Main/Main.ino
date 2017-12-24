@@ -87,6 +87,8 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 /*-----( Declare Functions )-----*/
 
+void(* resetFunc)(void) = 0;//this is the software reset that looks at addr 0x00
+
 void clearSetCursorAt(byte AT_CHAR, byte AT_LINE);
 void initialize();
 // checks if serial is available and read seiral monitor
@@ -314,6 +316,8 @@ void keypadEvent(KeypadEvent key)
         }
         break;
       case 'D':
+        lcd1LineMsg("Reset...",0,0,delay1_5K,LCD_CLEAR);
+        resetFunc();
         break;
       default: //In case smth goes to this option catch it
         break;
