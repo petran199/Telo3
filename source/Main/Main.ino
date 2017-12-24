@@ -7,7 +7,7 @@
 
 /*-----( Import needed libraries )-----*/
 
-#include <Wire.h>  // Comes with Arduino IDE
+#include <Wire.h> // Comes with Arduino IDE
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
 
@@ -17,11 +17,11 @@
 
 typedef unsigned int uint;
 
-#define LCD_CLEAR 1 // usefull for 1lineMsg if u want to use lcd.clear cmd or not
-#define LCD_NO_CLEAR 0 // and this one if you dont want to use lcd.cler cmd 
+#define LCD_CLEAR 1    // usefull for 1lineMsg if u want to use lcd.clear cmd or not
+#define LCD_NO_CLEAR 0 // and this one if you dont want to use lcd.cler cmd
 
-#define delay2K 2000 // 2k delay on a variety of functions
-#define delay1K 1000 // 1k delay on a variety of functions
+#define delay2K 2000   // 2k delay on a variety of functions
+#define delay1K 1000   // 1k delay on a variety of functions
 #define delay1_5K 1500 // 1.5k delay on a variety of functions
 
 //      length lower-upper bounds
@@ -41,39 +41,36 @@ typedef unsigned int uint;
 const byte ROWS(4); // number of Rows of keypad
 const byte COLS(4); // nuber of Columns of keypad
 
-const byte numbOfQuestions(5); // number of the array in lcdQuestionsArray 
-const byte numbOfAnswears(5); // number of the array in lcdAnswearsArray
+const byte numbOfQuestions(5); // number of the array in lcdQuestionsArray
+const byte numbOfAnswears(5);  // number of the array in lcdAnswearsArray
 
 /*----------( END_OF_CONSTANTS_DECLARATIONS ) ----------*/
 
 /*-----( Declare Variables )-----*/
 
-char keys[ROWS][COLS] = {// overview of the keypad keys that we need for object declaration
-  {'1', '2', '3', 'A'},
-  {'4', '5', '6', 'B'},
-  {'7', '8', '9', 'C'},
-  {'*', '0', '#', 'D'}
-};
-byte rowPins[ROWS] = {13, 12, 11, 10}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {9, 8, 7, 6}; //connect to the column pinouts of the keypad
+char keys[ROWS][COLS] = { // overview of the keypad keys that we need for object declaration
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    {'*', '0', '#', 'D'}};
+byte rowPins[ROWS] = {13, 12, 11, 10};        //connect to the row pinouts of the keypad
+byte colPins[COLS] = {9, 8, 7, 6};            //connect to the column pinouts of the keypad
 String lcdQuestionsArray[numbOfQuestions] = { // overview of Questions displayed to the User
-  "Give the desired length",
-  "Give the desired width",
-  "Give the desired number of trees",
-  "Manually plant rate? Y(#)/N(*)",
-  "Give the desired plant rate"
-};
-String lcdAnswearsArray[numbOfAnswears] = { } ; // here we will keep the answears of User
-String keypadReadAnswear = "";// initialise the var that keeps temporar answear of User
-String passwords[] = {"1111", "0000"}; //1111 User Mode , 0000 Maintenance Mode
+    "Give the desired length",
+    "Give the desired width",
+    "Give the desired number of trees",
+    "Manually plant rate? Y(#)/N(*)",
+    "Give the desired plant rate"};
+String lcdAnswearsArray[numbOfAnswears] = {}; // here we will keep the answears of User
+String keypadReadAnswear = "";                // initialise the var that keeps temporar answear of User
+String passwords[] = {"1111", "0000"};        //1111 User Mode , 0000 Maintenance Mode
 String mode[] = {"User", "Maintenance"};
 char elegalCharsArray[] = {'B', '*', '#'};
 bool isEnterActive(false);
 String lcdTypingSentences[numbOfQuestions] = {
-  "Length: ", "Width: ", "Numb of trees:","Your Answear:","plant rate: "
-};
-uint lowerBounds[numbOfQuestions] = {60,22,1,0,0};  //TODO find the 2 last values
-uint upperBounds[numbOfQuestions] = {25000,12500,6,0,0};  //TODO find the 2 last values
+    "Length: ", "Width: ", "Num of trees: ", "Your Answear: ", "plant rate: "};
+uint lowerBounds[numbOfQuestions] = {60, 22, 1, 0, 0};       //TODO find the 2 last values
+uint upperBounds[numbOfQuestions] = {25000, 12500, 6, 0, 0}; //TODO find the 2 last values
 
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
@@ -84,43 +81,42 @@ uint upperBounds[numbOfQuestions] = {25000,12500,6,0,0};  //TODO find the 2 last
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 //
 // check API at https://playground.arduino.cc/Code/Keypad#Download
-Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 /*----------( END_OF_OBJECT_DECLARATIONS ) ----------*/
 
 /*-----( Declare Functions )-----*/
 
-void clearSetCursorAt(byte AT_CHAR , byte AT_LINE );
+void clearSetCursorAt(byte AT_CHAR, byte AT_LINE);
 void initialize();
 // checks if serial is available and read seiral monitor
-void ckSerialToReadAns(String& keypadReadAnswear);
-// check if serial is available and then check the bounds of each question 
-void checkSerialAns(int& counter, String serialAns, uint firstBound, uint secondBound, String lengthWidthNumbTrees);
+void ckSerialToReadAns(String &keypadReadAnswear);
+// check if serial is available and then check the bounds of each question
+void checkSerialAns(int &counter, String serialAns, uint firstBound, uint secondBound, String lengthWidthNumbTrees);
 
-void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay, bool lcdClear );
-void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay , uint msg2Delay );
+void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay, bool lcdClear);
+void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay, uint msg2Delay);
 
 void keypadEvent(KeypadEvent key); // the system goes through this code every time a key is pressed
-bool isNumb(KeypadEvent key); // check if the letter is number or not
-bool isAlpha(KeypadEvent key); // check if the letter is Alpha or not
+bool isNumb(KeypadEvent key);      // check if the letter is number or not
+bool isAlpha(KeypadEvent key);     // check if the letter is Alpha or not
 
-void ckKeypadAns(int& counter, String keypadAns, uint firstBound, uint secondBound, String boundsAns);
-
+void ckKeypadAns(int &counter, String keypadAns, uint firstBound, uint secondBound, String boundsAns);
 
 /*----------( END_OF_FUNCTION_DECLARATIONS ) ----------*/
 
-
-
-void setup()   /*----( SETUP: RUNS ONCE )----*/
+void setup() /*----( SETUP: RUNS ONCE )----*/
 {
-  Serial.begin(9600);  // Used to type in characters
-  lcd.begin(16, 2); // initialize the dimensions of display
+  Serial.begin(9600);                   // Used to type in characters
+  lcd.begin(16, 2);                     // initialize the dimensions of display
   keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
   // start writing the answears on lcd
-  for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++) {
+  for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++)
+  {
     isEnterActive = false;
     keypad.buff[0] = i; // usefull to sync the i with the eventListener func
-    if (lcdQuestionsArray[i].length() > 16) {
+    if (lcdQuestionsArray[i].length() > 16)
+    {
       String tmpStr = lcdQuestionsArray[i];
       String sub1 = tmpStr.substring(0, 16);
       String sub2 = tmpStr.substring(16);
@@ -128,78 +124,65 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
       sub2.trim();
       // Prints out the questions
       //          Msg1,Msg2,lcdPos        ,delay
-     lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, delay2K);
+      lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, delay2K);
     }
-     lcd1LineMsg(lcdTypingSentences[i],0,0,0,LCD_CLEAR);
-      while(!isEnterActive){// runs till the enter button is pressed
-        char key = keypad.getKey();
-      }
-      
-        
-        // lcd1LineMsg(keypadReadAnswear,lcdTypingSentences[i].length(),0,100,LCD_NO_CLEAR);
-      // }
-      // w8 till Serial is available
-      // while (!Serial.available()) {};
-      // if (Serial.available()) {
-        //checks Serial and read/write all values to var keypadReadAnswear
-        // ckSerialToReadAns(keypadReadAnswear);
-       switch (i) {
-         case 0:
-           //checks for bounds and take apropriate descision
-          //  checkSerialAns(i, keypadReadAnswear, lengthLB, lengthUB, "Length");
-          ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
-           break;
-         case 1:
-          //  checkSerialAns(i, keypadReadAnswear, widthLB, widthUB, "Width");
-           break;
-         case 2:
-          //  checkSerialAns(i, keypadReadAnswear, numbOfTreesLB, numbOfTreesUB, "Numb trees");
-           break;
-         case 3:
-           //TODO write smth to chech manually plant rate Y/N
-           break;
-         default:
-         //TODO write smth else or find the lower-upper bounds
-           //checkSerialAns(i, keypadReadAnswear, lengthLB, lengthUB, "Plant rate");
-           break;
-       }
-//        delay(100);
-        // just empty the var to begin with new question
-//        keypadReadAnswear = "";
-      // }
-    // } else {
-    //   lcd.print(lcdQuestionsArray[i]);
-    //   delay(delay1K);
-    //   lcd.clear();
-    // }
-
+    lcd1LineMsg(lcdTypingSentences[i], 0, 0, 0, LCD_CLEAR);
+    while (!isEnterActive)
+    { // runs till the enter button is pressed
+      char key = keypad.getKey();
+    }
+    switch (i)
+    {
+    case 0:
+      //checks for bounds and take apropriate descision
+      //  checkSerialAns(i, keypadReadAnswear, lengthLB, lengthUB, "Length");
+      ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
+      break;
+    case 1:
+      ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
+      //  checkSerialAns(i, keypadReadAnswear, widthLB, widthUB, "Width");
+      break;
+    case 2:
+      ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
+      //  checkSerialAns(i, keypadReadAnswear, numbOfTreesLB, numbOfTreesUB, "Numb trees");
+      break;
+    case 3:
+      //TODO write smth to chech manually plant rate Y/N
+      break;
+    default:
+      //TODO write smth else or find the lower-upper bounds
+      //checkSerialAns(i, keypadReadAnswear, lengthLB, lengthUB, "Plant rate");
+      break;
+    }
   }
-}/*--(end setup )---*/
+} /*--(end setup )---*/
 
-void loop()   /*----( LOOP: RUNS CONSTANTLY )----*/
+void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 {
 
-
-
-
-
-}/* --(end main loop )-- */
+} /* --(end main loop )-- */
 
 /* ( Function Definition ) */
 
-void ckKeypadAns(int& counter, String keypadAns, uint firstBound, uint secondBound, String boundsAns) {
+void ckKeypadAns(int &counter, String keypadAns, uint firstBound, uint secondBound, String boundsAns)
+{
   // tmpAns exists to avoid decreasing counter twise
   bool tmpAns = false;
-  boundsAns = boundsAns.substring(0,boundsAns.length()-2);
-  if (keypadAns.toInt() < firstBound || keypadAns.toInt() > secondBound) {
+  boundsAns = boundsAns.substring(0, boundsAns.length() - 2);
+  if (keypadAns.toInt() < firstBound || keypadAns.toInt() > secondBound)
+  {
     //check serial.length() in case user pressed enter without any value
-    if (keypadAns.length() < 1) {
+    if (keypadAns.length() < 1)
+    {
       lcd2LineMsg("You must write", "a value...", 0, 0, 0, 1, 0, delay2K);
       // --counter;
       tmpAns = true;
-    }//end of serialAns.length()<1
-    if (!tmpAns) {
-      lcd2LineMsg(boundsAns + ":" + keypadAns + "cm", "Out of bounds...", 0, 0, 0, 1, 0, delay2K);
+    } //end of serialAns.length()<1
+    if (!tmpAns)
+    {
+      String tmp = (boundsAns + ":" + keypadAns);
+
+      lcd2LineMsg((keypad.buff[0] == 2) ? tmp : (tmp + "cm"), "Out of bounds...", 0, 0, 0, 1, 0, delay2K);
       lcd1LineMsg("Try again...", 0, 0, delay1_5K, LCD_CLEAR);
       // tmp is helpfull to turn the whole sentense that we wanna use into type String
       String lastSentenceToString = ((String)firstBound + "<" + boundsAns + "<" + (String)secondBound);
@@ -209,112 +192,174 @@ void ckKeypadAns(int& counter, String keypadAns, uint firstBound, uint secondBou
     --counter;
     keypadReadAnswear = "";
     lcd.clear();
-  }// end of serialAns.toInt()<firstBound || serialAns.toInt()>secondBound
-  else { // serialAns bounds OK!
+  } // end of serialAns.toInt()<firstBound || serialAns.toInt()>secondBound
+  else
+  { // serialAns bounds OK!
     //save the answear to the array
     lcdAnswearsArray[counter] = keypadAns;
     keypadReadAnswear = "";
-  }// end of serialAns bounds OK!
+  } // end of serialAns bounds OK!
 }
 
-bool isNumb(KeypadEvent key){
-  for(byte i(0); i < ROWS; i++){
-    for(byte j(0); j < COLS-1; j++){
-      if(keys[i][j] == key){
-        // test if it works like that else replace  with break and tmpVars
+bool isNumb(KeypadEvent key)
+{
+  for (byte i(0); i < ROWS; i++)
+  {
+    for (byte j(0); j < COLS - 1; j++)
+    {
+      if (keys[i][j] == key)
+      {
         return true;
       }
     }
   }
   return false;
 };
-bool isAlpha(KeypadEvent key){
-  for(byte i(0); i < ROWS; i++){
-    for(byte j(COLS-1); j < COLS; j++){
-      if(keys[i][j] == key){
-        // test if it works like that else replace  with break and tmpVars
+bool isAlpha(KeypadEvent key)
+{
+  for (byte i(0); i < ROWS; i++)
+  {
+    for (byte j(COLS - 1); j < COLS; j++)
+    {
+      if (keys[i][j] == key)
+      {
         return true;
       }
     }
   }
   return false;
 };
-void keypadEvent(KeypadEvent key) {
-  switch (keypad.getState()){
-    case PRESSED:
-      if (isNumb(key)) {
-        if(key != '*' && key != '#'){
-          if(keypadReadAnswear.length() < 5){//5 chars max
-          //concat the key to keypadReadAnswear
+void keypadEvent(KeypadEvent key)
+{
+  switch (keypad.getState())
+  {
+  case PRESSED:
+    if (isNumb(key))
+    {
+      if (key != '*' && key != '#')
+      {
+        switch (keypad.buff[0])
+        {
+        case 0:
+          if (keypadReadAnswear.length() < 5)
+          { //5 chars max
+            //concat the key to keypadReadAnswear
             keypadReadAnswear += key;
-            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]],(keypadReadAnswear.length()>0)?keypadReadAnswear +"cm":keypadReadAnswear,0,0,lcdTypingSentences[keypad.buff[0]].length()-1,0,0,10);
-          }else{
-              lcd2LineMsg("too many digits...","Press C to clear",0,0,0,1,0,1500);
-              lcd2LineMsg(lcdTypingSentences[keypad.buff[0]],keypadReadAnswear +"cm",0,0,lcdTypingSentences[keypad.buff[0]].length()-1,0,0,10);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ? keypadReadAnswear + "cm" : keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
           }
-        }else if(key == '*'){
-   
-          //TODO smth with asterisk letter fo keypad
-        }else{// key == '#'
-        
-          //TODO smth with # symbol 
-        }
-      }else if(isAlpha(key)){
-        //TODO do smth to hadnle letters
-        switch (key){
-          case 'A':
-          isEnterActive = true;
-          break;
-          case 'B':
-          break;
-          case 'C':
-          if(keypadReadAnswear.length()>0){//5 chars max
-            keypadReadAnswear = keypadReadAnswear.substring(0, keypadReadAnswear.length() - 1);
-            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]],(keypadReadAnswear.length()>0)?keypadReadAnswear +"cm":keypadReadAnswear,0,0,lcdTypingSentences[keypad.buff[0]].length()-1,0,0,10);
+          else
+          {
+            lcd2LineMsg("too many digits...", "Press C to clear", 0, 0, 0, 1, 0, 1500);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], keypadReadAnswear + "cm", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
           }
           break;
-          case 'D':
+        case 1:
+          if (keypadReadAnswear.length() < 5)
+          { //5 chars max
+            //concat the key to keypadReadAnswear
+            keypadReadAnswear += key;
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ? keypadReadAnswear + "cm" : keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
+          else
+          {
+            lcd2LineMsg("too many digits...", "Press C to clear", 0, 0, 0, 1, 0, 1500);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], keypadReadAnswear + "cm", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
           break;
-          default: //IN case somth goes to this option catch it
+        case 2:
+          if (keypadReadAnswear.length() < 1)
+          { //5 chars max
+            //concat the key to keypadReadAnswear
+            keypadReadAnswear += key;
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
+          else
+          {
+            lcd2LineMsg("too many digits...", "Press C to clear", 0, 0, 0, 1, 0, 1500);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
+          break;
+        case 3:
+          break;
+        case 4:
           break;
         }
-     }
-      break;
-  // case RELEASED: // these are useless right now
-      // if (key == '#') {
-      //   // digitalWrite(ledPin,!digitalRead(ledPin));
-      //   // ledPin_state = digitalRead(ledPin);        // Remember LED state, lit or unlit.
-      // }
-  //     break;
-  // case HOLD:
-  //     break;
+      }
+      else if (key == '*')
+      {
+
+        //TODO smth with asterisk letter fo keypad
+      }
+      else
+      { // key == '#'
+
+        //TODO smth with # symbol
+      }
+    }
+    else if (isAlpha(key))
+    {
+      //TODO do smth to hadnle letters
+      switch (key)
+      {
+      case 'A':
+        isEnterActive = true;
+        break;
+      case 'B':
+        break;
+      case 'C':
+        if (keypadReadAnswear.length() > 0)
+        { //5 chars max
+          keypadReadAnswear = keypadReadAnswear.substring(0, keypadReadAnswear.length() - 1);
+          lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ?(keypad.buff[0] == 2)? keypadReadAnswear : (keypadReadAnswear +"cm"):keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+        }
+        break;
+      case 'D':
+        break;
+      default: //In case smth goes to this option catch it
+        break;
+      }
+    }
+    break;
+  case RELEASED: // these are useless right now
+    break;
+  case HOLD:
+    break;
+  case IDLE:
+    break;
   }
 }
 
-void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 0, bool lcdClear = LCD_NO_CLEAR ) {
-  if(lcdClear){
+void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 0, bool lcdClear = LCD_NO_CLEAR)
+{
+  if (lcdClear)
+  {
     lcd.clear();
   };
-  lcd.setCursor( cursorCharAt, cursorLineAt);
+  lcd.setCursor(cursorCharAt, cursorLineAt);
   lcd.print(msg);
   delay(Delay);
 }
-void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay = 0, uint msg2Delay = 0) { //TODO write this function and continue for the lcs1LineMsg and commit to gitlab
+void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay = 0, uint msg2Delay = 0)
+{ //TODO write this function and continue for the lcs1LineMsg and commit to gitlab
   lcd1LineMsg(firstMsg, msg1CursorCharAt, msg1CursorLineAt, msg1Delay, LCD_CLEAR);
   lcd1LineMsg(secondMsg, msg2CursorCharAt, msg2CursorLineAt, msg2Delay);
 }
 
-void checkSerialAns(int& counter, String serialAns, uint firstBound, uint secondBound, String lengthWidthNumbTrees) {
+void checkSerialAns(int &counter, String serialAns, uint firstBound, uint secondBound, String lengthWidthNumbTrees)
+{
   // tmpAns exists to avoid decreasing counter twise
   bool tmpAns = false;
-  if (serialAns.toInt() < firstBound || serialAns.toInt() > secondBound) {
+  if (serialAns.toInt() < firstBound || serialAns.toInt() > secondBound)
+  {
     //check serial.length() in case user pressed enter without any value
-    if (serialAns.length() < 1) {
+    if (serialAns.length() < 1)
+    {
       lcd2LineMsg("You must write", "a value...", 0, 0, 0, 1, 0, delay2K);
       --counter;
       tmpAns = true;
-    }//end of serialAns.length()<1
-    if (!tmpAns) {
+    } //end of serialAns.length()<1
+    if (!tmpAns)
+    {
       lcd2LineMsg(lengthWidthNumbTrees + ":" + keypadReadAnswear + "cm", "Out of bounds...", 0, 0, 0, 1, 0, delay2K);
       lcd1LineMsg("Try again...", 0, 0, delay1_5K, LCD_CLEAR);
       // tmp is helpfull to turn the whole sentense that we wanna use into type String
@@ -323,19 +368,22 @@ void checkSerialAns(int& counter, String serialAns, uint firstBound, uint second
       --counter;
     }
     lcd.clear();
-  }// end of serialAns.toInt()<firstBound || serialAns.toInt()>secondBound
-  else { // serialAns bounds OK!
+  } // end of serialAns.toInt()<firstBound || serialAns.toInt()>secondBound
+  else
+  { // serialAns bounds OK!
 
-  }// end of serialAns bounds OK!
+  } // end of serialAns bounds OK!
 }
 
-void ckSerialToReadAns(String& keypadReadAnswear) {
+void ckSerialToReadAns(String &keypadReadAnswear)
+{
   // wait a bit for the entire message to arrive
   delay(10);
   // clear the screen
   lcd.clear();
   // read all the available characters
-  while (Serial.available() > 0) {
+  while (Serial.available() > 0)
+  {
     keypadReadAnswear += (char)Serial.read();
   }
   //detracked null char '\0' at the end of the sentence
@@ -343,22 +391,24 @@ void ckSerialToReadAns(String& keypadReadAnswear) {
   delay(10);
 }
 
-
-
-void clearSetCursorAt(byte AT_CHAR = 0, byte AT_LINE = 0) {
+void clearSetCursorAt(byte AT_CHAR = 0, byte AT_LINE = 0)
+{
   lcd.clear();
   lcd.setCursor(AT_CHAR, AT_LINE);
 }
 
-void initialize() {
+void initialize()
+{
 
   clearSetCursorAt();
   //  lcd.print("Give password...");
   //  delay(500);
   Serial.print(Serial.available());
-  if (Serial.available()) {
+  if (Serial.available())
+  {
     clearSetCursorAt(0, 0);
-    while (Serial.available() > 0) {
+    while (Serial.available() > 0)
+    {
       //      keypadReadAnswear = keypadReadAnswear + Serial.read();
       keypadReadAnswear.concat(Serial.read());
       lcd.write(Serial.read());
@@ -368,15 +418,19 @@ void initialize() {
     //    lcd.write(Serial.read());
     //    }
 
-    for (byte i = 0 ; i < (sizeof(passwords) / sizeof(passwords[0])); i++) {
+    for (byte i = 0; i < (sizeof(passwords) / sizeof(passwords[0])); i++)
+    {
       Serial.print(keypadReadAnswear);
-      if (keypadReadAnswear == passwords[i]) {
+      if (keypadReadAnswear == passwords[i])
+      {
         clearSetCursorAt();
         lcd.print("You are loged in as ");
         lcd.setCursor(0, 1);
         lcd.print(mode[i]);
         break;
-      } else {
+      }
+      else
+      {
         clearSetCursorAt();
         delay(500);
         lcd.print("Wrong password..");
@@ -385,6 +439,3 @@ void initialize() {
     }
   }
 }
-
-
-
