@@ -28,7 +28,7 @@ typedef unsigned int uint;
 #define lengthLB 60
 #define lengthUB 25000
 //      width lower-upper bounds
-#define widthLB 22
+#define widthLB 28
 #define widthUB 12500
 //      width lower-upper bounds
 #define numbOfTreesLB 1
@@ -56,10 +56,10 @@ char keys[ROWS][COLS] = { // overview of the keypad keys that we need for object
 byte rowPins[ROWS] = {13, 12, 11, 10};        //connect to the row pinouts of the keypad
 byte colPins[COLS] = {9, 8, 7, 6};            //connect to the column pinouts of the keypad
 String lcdQuestionsArray[numbOfQuestions] = { // overview of Questions displayed to the User
-    "Give the desired length",
-    "Give the desired width",
+    "Give the desired Length",
+    "Give the desired Width",
     "Give the desired number of trees",
-    "Manually plant rate? Y(#)/N(*)",
+    "Manually _plant_ rate? Y(#)/N(*)",
     "Give the desired plant rate"};
 String lcdAnswearsArray[numbOfAnswears] = {}; // here we will keep the answears of User
 String keypadReadAnswear = "";                // initialise the var that keeps temporar answear of User
@@ -69,8 +69,12 @@ char elegalCharsArray[] = {'B', '*', '#'};
 bool isEnterActive(false);
 String lcdTypingSentences[numbOfQuestions] = {
     "Length: ", "Width: ", "Num of trees: ", "Your Answear: ", "plant rate: "};
-uint lowerBounds[numbOfQuestions] = {60, 22, 1, 0, 0};       //TODO find the 2 last values
-uint upperBounds[numbOfQuestions] = {25000, 12500, 6, 0, 0}; //TODO find the 2 last values
+uint lowerBounds[numbOfQuestions] = {lengthLB, widthLB, numbOfTreesLB, 0, 0};       //TODO find the 2 last values
+uint upperBounds[numbOfQuestions] = {lengthUB, widthUB, numbOfTreesUB, 0, 0}; //TODO find the 2 last values
+
+uint totalRounds(0); //Number of courses in Specifications 2.2.5
+uint actualFieldLength(0); //Length of courses in Specifications 2.2.5
+uint plantRate(0);
 
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
@@ -137,18 +141,42 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
     {
     case 0:
       //checks for bounds and take apropriate descision
-      //  checkSerialAns(i, keypadReadAnswear, lengthLB, lengthUB, "Length");
       ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
+      if(lcdAnswearsArray[0].length()>0){
+        actualFieldLength = lcdAnswearsArray[i].toInt() - 22;
+      }
       break;
     case 1:
       ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
-      //  checkSerialAns(i, keypadReadAnswear, widthLB, widthUB, "Width");
+      if(lcdAnswearsArray[1].length()>0){
+        totalRounds = round(lcdAnswearsArray[i].toFloat() / 28);
+        uint calcDist = (totalRounds*actualFieldLength) +((totalRounds-1)*28);
+        
+        if( calcDist >25000){ //total distance is out of bounds
+          lcd2LineMsg("Total Distance","Out of bounds",0,0,0,1,0,delay2K);
+          lcd1LineMsg("Reset...",0,0,delay1K,LCD_CLEAR);
+          resetFunc();
+        }else{
+          lcd2LineMsg("The robot car","goes through",0,0,0,1,0,delay2K);
+          lcd2LineMsg((String)calcDist+"cm along","the field",0,0,0,1,0,delay2K);
+        }
+      }
       break;
     case 2:
       ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
-      //  checkSerialAns(i, keypadReadAnswear, numbOfTreesLB, numbOfTreesUB, "Numb trees");
       break;
     case 3:
+    
+      lcdAnswearsArray[i] = (keypadReadAnswear=="#")?"Yes":"No";
+      if(lcdAnswearsArray[i] == "No"){
+        float calc = actualFieldLength * totalRounds; //auto calc for plant rate
+        plantRate = round(calc / lcdAnswearsArray[i-1].toInt());
+        lcd1LineMsg("plant rate:"+ (String)plantRate,0,0,0,LCD_CLEAR);
+        Serial.print(plantRate);
+        ++i;
+      }
+      
+      // if(keypadReadAnswear == "")
       //TODO write smth to chech manually plant rate Y/N
       break;
     default:
@@ -157,6 +185,7 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
       break;
     }
   }
+  lcd1LineMsg("Let's start..",0,1,delay2K,LCD_NO_CLEAR);
 } /*--(end setup )---*/
 
 void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
@@ -289,11 +318,28 @@ void keypadEvent(KeypadEvent key)
       }
       else if (key == '*')
       {
-
+        if(keypad.buff[0]==3){
+          if(keypadReadAnswear.length()<1){
+            keypadReadAnswear += key;
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear=="*")?"No":"", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }else{
+            lcd2LineMsg("too many chars...", "Press C to clear", 0, 0, 0, 1, 0, 1500);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear=="*")?"No":"Yes", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
+        }
         //TODO smth with asterisk letter fo keypad
       }
       else
       { // key == '#'
+        if(keypad.buff[0]==3){
+          if(keypadReadAnswear.length()<1){
+            keypadReadAnswear += key;
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear=="#")?"Yes":"", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }else{
+            lcd2LineMsg("too many chars...", "Press C to clear", 0, 0, 0, 1, 0, 1500);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear=="#")?"Yes":"No", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
+        }
 
         //TODO smth with # symbol
       }
@@ -312,7 +358,23 @@ void keypadEvent(KeypadEvent key)
         if (keypadReadAnswear.length() > 0)
         { //5 chars max
           keypadReadAnswear = keypadReadAnswear.substring(0, keypadReadAnswear.length() - 1);
-          lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ?(keypad.buff[0] == 2)? keypadReadAnswear : (keypadReadAnswear +"cm"):keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          if(keypad.buff[0] == 0 || keypad.buff[0] == 1){
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ?(keypadReadAnswear +"cm"):keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }else if(keypad.buff[0] == 2){
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ?keypadReadAnswear:keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }else if(keypad.buff[0] == 3){
+            String tmporar = "";
+            if(keypadReadAnswear=="#"){
+              tmporar = "Yes";
+            }
+            if(keypadReadAnswear=="*"){
+              tmporar = "No";
+            }
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ? tmporar : tmporar, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }else{ // keypad.buff[0] == 4
+
+          }
+         
         }
         break;
       case 'D':
