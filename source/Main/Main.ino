@@ -33,6 +33,8 @@ typedef unsigned int uint;
 //      width lower-upper bounds
 #define numbOfTreesLB 1
 #define numbOfTreesUB 6
+//
+#define plantRateLB 6// changed ean kaneis praxeis to min einai 6..
 
 /*----------( END_OF_#DEFINES_AND_UTILITIES_DECLARATIONS ) ----------*/
 
@@ -69,7 +71,7 @@ char elegalCharsArray[] = {'B', '*', '#'};
 bool isEnterActive(false);
 String lcdTypingSentences[numbOfQuestions] = {
     "Length: ", "Width: ", "Num of trees: ", "Your Answear: ", "plant rate: "};
-uint lowerBounds[numbOfQuestions] = {lengthLB, widthLB, numbOfTreesLB, 0, 0};       //TODO find the 2 last values
+uint lowerBounds[numbOfQuestions] = {lengthLB, widthLB, numbOfTreesLB, 0, plantRateLB};       //TODO find the 2 last values
 uint upperBounds[numbOfQuestions] = {lengthUB, widthUB, numbOfTreesUB, 0, 0}; //TODO find the 2 last values
 
 uint totalRounds(0); //Number of courses in Specifications 2.2.5
@@ -166,26 +168,29 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
       ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
       break;
     case 3:
-    
-      lcdAnswearsArray[i] = (keypadReadAnswear=="#")?"Yes":"No";
-      if(lcdAnswearsArray[i] == "No"){
+      if(1){// bug with switch case.. cross init issue without if(1)
         float calc = actualFieldLength * totalRounds; //auto calc for plant rate
-        plantRate = round(calc / lcdAnswearsArray[i-1].toInt());
-        lcd1LineMsg("plant rate:"+ (String)plantRate,0,0,0,LCD_CLEAR);
-        Serial.print(plantRate);
-        ++i;
+      plantRate = round(calc / lcdAnswearsArray[i-1].toInt());
+      upperBounds[i+1] = plantRate; // add these value in case user wants manual plant rate 
       }
-      
-      // if(keypadReadAnswear == "")
-      //TODO write smth to chech manually plant rate Y/N
+      lcdAnswearsArray[i] = (keypadReadAnswear=="#")?"Yes":"No";
+      keypadReadAnswear = ""; // clean keypad in case user goes to manual plant rate
+      if(lcdAnswearsArray[i] == "No"){
+        lcd1LineMsg("Plant rate:"+ (String)plantRate,0,0,0,LCD_CLEAR);
+        ++i;//  jump to the next itteration and avoid last question
+      }
       break;
+    case 4:
+      ckKeypadAns(i, keypadReadAnswear, lowerBounds[i], upperBounds[i], lcdTypingSentences[i]);
+    break;
     default:
       //TODO write smth else or find the lower-upper bounds
       //checkSerialAns(i, keypadReadAnswear, lengthLB, lengthUB, "Plant rate");
       break;
     }
   }
-  lcd1LineMsg("Let's start..",0,1,delay2K,LCD_NO_CLEAR);
+  lcd1LineMsg("Let's start...",0,1,delay2K*3,LCD_NO_CLEAR);
+  lcd.clear();
 } /*--(end setup )---*/
 
 void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
@@ -213,7 +218,7 @@ void ckKeypadAns(int &counter, String keypadAns, uint firstBound, uint secondBou
     {
       String tmp = (boundsAns + ":" + keypadAns);
 
-      lcd2LineMsg((keypad.buff[0] == 2) ? tmp : (tmp + "cm"), "Out of bounds...", 0, 0, 0, 1, 0, delay2K);
+      lcd2LineMsg((keypad.buff[0] == 2 || keypad.buff[0] == 4) ? tmp : (tmp + "cm"), "Out of bounds...", 0, 0, 0, 1, 0, delay2K);
       lcd1LineMsg("Try again...", 0, 0, delay1_5K, LCD_CLEAR);
       // tmp is helpfull to turn the whole sentense that we wanna use into type String
       String lastSentenceToString = ((String)firstBound + "<" + boundsAns + "<" + (String)secondBound);
@@ -313,6 +318,18 @@ void keypadEvent(KeypadEvent key)
         case 3:
           break;
         case 4:
+        
+          if (keypadReadAnswear.length() < String(plantRate).length())
+          { //5 chars max
+            //concat the key to keypadReadAnswear
+            keypadReadAnswear += key;                                                                                   
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ? keypadReadAnswear  : keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
+          else
+          {
+            lcd2LineMsg("too many digits...", "Press C to clear", 0, 0, 0, 1, 0, 1500);
+            lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], keypadReadAnswear , 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
+          }
           break;
         }
       }
@@ -327,7 +344,7 @@ void keypadEvent(KeypadEvent key)
             lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear=="*")?"No":"Yes", 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
           }
         }
-        //TODO smth with asterisk letter fo keypad
+        
       }
       else
       { // key == '#'
@@ -341,12 +358,12 @@ void keypadEvent(KeypadEvent key)
           }
         }
 
-        //TODO smth with # symbol
+        
       }
     }
     else if (isAlpha(key))
     {
-      //TODO do smth to hadnle letters
+      
       switch (key)
       {
       case 'A':
@@ -360,7 +377,7 @@ void keypadEvent(KeypadEvent key)
           keypadReadAnswear = keypadReadAnswear.substring(0, keypadReadAnswear.length() - 1);
           if(keypad.buff[0] == 0 || keypad.buff[0] == 1){
             lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ?(keypadReadAnswear +"cm"):keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
-          }else if(keypad.buff[0] == 2){
+          }else if(keypad.buff[0] == 2 || keypad.buff[0] == 4){
             lcd2LineMsg(lcdTypingSentences[keypad.buff[0]], (keypadReadAnswear.length() > 0) ?keypadReadAnswear:keypadReadAnswear, 0, 0, lcdTypingSentences[keypad.buff[0]].length() - 1, 0, 0, 10);
           }else if(keypad.buff[0] == 3){
             String tmporar = "";
