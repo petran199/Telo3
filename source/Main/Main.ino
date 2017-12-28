@@ -72,8 +72,9 @@ String lcdQuestionsArray[numbOfQuestions] = { // overview of Questions displayed
 String lcdAnswearsArray[numbOfAnswears] = {""}; // here we will keep the answears of User
 String keypadReadAnswear = "";                // initialise the var that keeps temporar answear of User
 String tmpPass = "";    // used to turn the numbers that user press on keypad to asterisk (*)
+String userPassAns = "";
 String passwords[] = {"1111", "0000"};        //1111 User Mode , 0000 Maintenance Mode
-String mode[] = {"User", "Maintenance"};
+String mode[] = {"User mode", "Maintenance mode"};
 bool isEnterActive(false);        // check if enter is pressed
 String lcdTypingSentences[numbOfQuestions] = { //used in some functions related to the question above
     "Length:", "Width:", "Num of trees:", "Your Answear:", "Pl. rate:"};
@@ -100,8 +101,6 @@ void (*resetFunc)(void) = 0; //this is the software reset that looks at addr 0x0
 void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay, bool lcdClear);
 void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay, uint msg2Delay);
 void ckKeypadAns(int& i, String keypadAns, uint firstBound, uint secondBound, String boundsAns);
-void concatKeysAndPrint(char key,bool containsCm);
-void warnTooManyChars(String msg,bool containsCm , uint delay ); 
 void ckPlantRate(int& i);
 void ckCalcDist(int& i);
 void questionMsg(int& i);
@@ -116,6 +115,7 @@ void checkPassword();
 void setup() /*----( SETUP: RUNS ONCE )----*/
 {
    init0(); //initialization
+   //TODO check photoresistor...
    lcd2LineMsg("Give the pass...","Password:",0,0,0,1,0,0);
    while(keypadReadAnswear!=passwords[0] && keypadReadAnswear!= passwords[1]){
       while(!isEnterActive){
@@ -136,9 +136,12 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
       }
       checkPassword();
     }
-  lcd1LineMsg("Bingo!",0,0,0,LCD_CLEAR);
-  keypadReadAnswear="";
-  delay(delay2K);
+ 
+  checkModeAndPrintMsg();
+  
+  //TODO write func that checks Hydro and print msg
+ 
+
   // start writing the answears on lcd
   for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++)
   {
@@ -171,6 +174,23 @@ void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 } /* --(end main loop )-- */
 
 /* ( Function Definition ) */
+
+void checkModeAndPrintMsg(){
+  lcd1LineMsg("Bingo!",0,0,0,LCD_CLEAR);
+  userPassAns = keypadReadAnswear;
+  delay(delay1K);
+  for (int i = 0; i<(sizeof(passwords) / sizeof(passwords[0])); i++){
+    if(userPassAns==passwords[i]){
+      lcd2LineMsg("Welcome to",mode[i],0,0,0,1,0,delay2K);
+    }
+  }
+  keypadReadAnswear="";
+  if(userPassAns == passwords[1]){
+    //TODO move all motors
+    while(1){}
+  }
+}
+
 void checkQuestion(int& i){
   if(keypadReadAnswear.length()<=0){
     lcd2LineMsg("You must write", "a value...", 0, 0, 0, 1, 0, delay2K);
