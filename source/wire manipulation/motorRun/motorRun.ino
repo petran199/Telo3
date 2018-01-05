@@ -8,6 +8,8 @@ AF_DCMotor motorR(2,MOTOR12_1KHZ);
 // HAll sensor values first is Left Hall second is Right Hall
 String first="";
 String second="";
+int leftHallDist = 0;
+int rightHallDist = 0;
 
 void setup()
 {
@@ -18,12 +20,16 @@ void setup()
 }
 
 void loop(){
-  while(first.toInt() <= 1330 && second.toInt() <= 1330){
+  while(leftHallDist <= 1330 &&  rightHallDist <= 1330){
     Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
     hallDistCalc(); //calculate hall left and right  distance
+    allignedMovementOfVehicle(); // try to align the movement of the vehicle
+    Serial.println("First:" + String(leftHallDist)); 
+    Serial.println("Second:" + String(rightHallDist));
   }
-  setMotorSpeedLeftToRight(0,0);
+  setMotorSpeedLeftToRight(0,0); //stop the engines
 }
+
 
 void hallDistCalc(){
   first = "";
@@ -48,8 +54,7 @@ void hallDistCalc(){
       }
     }
     first = first.substring(0,first.length()-cnt);
-    Serial.println("First:"+first);
-    // first = "";
+    leftHallDist = first.toInt();
     cnt = 0;
     for(int i = 0; i<second.length();i++){
       if(!isDigit(second[i])){
@@ -57,10 +62,7 @@ void hallDistCalc(){
       }
     }
     second = second.substring(0,second.length()-cnt);
-    Serial.println("Second:"+second);
-    // second = "";
-    
-    delay(50);
+    rightHallDist = second.toInt();
 }
 
 void setMotorSpeedLeftToRight(byte left,byte right){
@@ -70,5 +72,17 @@ void setMotorSpeedLeftToRight(byte left,byte right){
   motorL.run(FORWARD);
 }
 
+void allignedMovementOfVehicle(){
+  if(leftHallDist - rightHallDist>=10){
+    setMotorSpeedLeftToRight(100,235);
+    delay(25);
+  }else if(leftHallDist - rightHallDist<=10){
+    setMotorSpeedLeftToRight(235,100);
+    delay(25);
+  }else{
+    setMotorSpeedLeftToRight(235,235);
+    delay(25);
+  }
+}
 
 
