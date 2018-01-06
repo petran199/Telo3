@@ -20,17 +20,26 @@ void setup()
 }
 
 void loop(){
-  while(leftHallDist <= 1330 &&  rightHallDist <= 1330){
-    Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
-    hallDistCalc(); //calculate hall left and right  distance
-    allignedMovementOfVehicle(); // try to align the movement of the vehicle
-    Serial.println("First:" + String(leftHallDist)); 
-    Serial.println("Second:" + String(rightHallDist));
-  }
+  moveNplantThroughDesiredWidth(150);
+  
   setMotorSpeedLeftToRight(0,0); //stop the engines
 }
 
-
+void moveNplantThroughDesiredWidth(uint actFieldLength){
+  uint actualFieldDist = cmTohallDist(actFieldLength);
+  while(leftHallDist <= actualFieldDist &&  rightHallDist <= actualFieldDist){
+    Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
+    hallDistCalc(); //calculate hall left and right  distance
+    allignedMovementOfVehicle(); // try to align the movement of the vehicle
+    // Serial.println("First:" + String(leftHallDist)); 
+    // Serial.println("Second:" + String(rightHallDist));
+  }
+}
+ uint cmTohallDist(uint actualFieldLeng){
+    double tmp = (actualFieldLeng / 0,1172741); //1 pulse = 0.1172741cm
+    uint cm = round(tmp);
+    return cm;
+ }
 void hallDistCalc(){
   first = "";
   second = "";
