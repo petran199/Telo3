@@ -10,6 +10,7 @@
 #include <Wire.h> // Comes with Arduino IDE
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <AFMotor.h>
 
 /*----------( END_OF_IMPORT_LIBRARIES ) ----------*/
 
@@ -80,10 +81,14 @@ String lcdTypingSentences[numbOfQuestions] = { //used in some functions related 
     "Length:", "Width:", "Num of trees:", "Your Answear:", "Pl. rate:"};
 uint lowerBounds[numbOfQuestions] = {lengthLB, widthLB, numbOfTreesLB, 1, plantRateLB}; 
 uint upperBounds[numbOfQuestions] = {lengthUB, widthUB, numbOfTreesUB, 1, 0};         //the last 0 value is calculated on the way  
-
 uint totalRounds(0);       //Number of courses in Specifications 2.2.5
 uint actualFieldLength(0); //Length of courses in Specifications 2.2.5
 uint plantRate(0);  
+// HAll sensor values first is Left Hall second is Right Hall
+String first="";
+String second="";
+int leftHallDist = 0;
+int rightHallDist = 0;
 
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
@@ -93,22 +98,36 @@ uint plantRate(0);
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 // check API at https://playground.arduino.cc/Code/Keypad#Download
 Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+AF_DCMotor motorL(1,MOTOR12_1KHZ);// left motor
+AF_DCMotor motorR(2,MOTOR12_1KHZ);//right motor
 
 /*----------( END_OF_OBJECT_DECLARATIONS ) ----------*/
 
 /*-----( Declare Functions )-----*/
 void (*resetFunc)(void) = 0; //this is the software reset that looks at addr 0x00
+//write to screen 1 line of message(message, cursot at position,cursor at line,how long to be displayed,clear lcd before run this func or no)
 void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay, bool lcdClear);
+//write to screen 2 line of messages, it's based on lcd1LineMsg func almost same arguments
 void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay, uint msg2Delay);
+//check the users answear about the bounds of length width plant rate etc..
 void ckKeypadAns(int& i, String keypadAns, uint firstBound, uint secondBound, String boundsAns);
-void ckPlantRate(int& i);
-void ckCalcDist(int& i);
-void questionMsg(int& i);
-void init0();
-void checkAnswears(int& i);
-void checkAndPrintPass(byte Passlength,char key);
-void swOnPassKeyPress(char key);
-void checkPassword();
+void ckPlantRate(int& i); // handle plant rate question based on user's response.Manual or Auto?
+void ckCalcDist(int& i); //calculates totalRounds and if it is out of bounds it prints msg and reset.. 
+void questionMsg(int& i);// prints each time the question that are stored on lcdQuestionsArray
+void init0();// simple initialization like serial.begin, wire begin, lcd.begin etc..
+// void checkAnswears(int& i);
+void checkAndPrintQuestion(int i,char key);// checks the user's answear based on the question of the system and prints them out . also informs user when he writes too many chars
+void swOnQuestionKeyPress(int i,char key);// switch on every keypad key press and take actions
+void checkQuestion(int& i);//checks if user pushed a button as answear  and then runs ckKeypadAns func
+void checkAndPrintPass(byte Passlength,char key);// do the same work as checkAndPrintQuestion but based on password rules this time
+void swOnPassKeyPress(char key);// the same rules as swOnQuestionKeyPress but for password actions
+void checkPassword();//the same as checkQuestion and then checks if user put the correct passwords
+void checkModeAndPrintMsg();// check mode based on user's pasword and print apropriate msg to screen
+void moveNplantThroughDesiredFieldLength(uint actFieldLength);// move the car till the end of actualFieldLeng and do the tree planting on the way 
+uint cmToHallDist(uint actualFieldLeng);// conver  centimeters to Hall measure system (pulses)
+void hallDistCalc(); // reads the response of hall slave arduino and put its values to first, second, leftHallDist, rightHallDist vars
+void setMotorSpeedLeftToRight(byte left,byte right);// set the speed of left and right motor
+void allignedMovementOfVehicle();// based on  hallSensors' values, trying to stabilise the difference of them to be equal to zero and move the car in straight line
 
 /*----------( END_OF_FUNCTION_DECLARATIONS ) ----------*/
 
@@ -170,7 +189,10 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
 
 void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 {
-
+  
+  moveNplantThroughDesiredFieldLength(actualFieldLength);//move through user's desired field length
+  
+  setMotorSpeedLeftToRight(0,0); //stop the engines afthe completion
 } /* --(end main loop )-- */
 
 /* ( Function Definition ) */
@@ -205,6 +227,7 @@ void checkQuestion(int& i){
       }
   }
 }
+
 void checkPassword(){
   if(keypadReadAnswear.length()<=0){
     lcd2LineMsg("You must write", "a value...", 0, 0, 0, 1, 0, delay2K);
@@ -223,6 +246,7 @@ void checkPassword(){
     }
   }
 }
+
 void checkAndPrintQuestion(int i,char key){
   if(keypadReadAnswear.length()<String(upperBounds[i]).length()){
     keypadReadAnswear+=key;
@@ -232,6 +256,7 @@ void checkAndPrintQuestion(int i,char key){
     lcd1LineMsg((lcdTypingSentences[i]+keypadReadAnswear),0,0,0,LCD_CLEAR);
   }
 }
+
 void checkAndPrintPass(byte Passlength,char key){
   if(keypadReadAnswear.length()<Passlength){
     tmpPass = "";
@@ -273,6 +298,7 @@ void swOnPassKeyPress(char key){
     checkAndPrintPass(passMaxChar,key);
   }
 }
+
 void swOnQuestionKeyPress(int i,char key){
   if(isDigit(key) ){
     if(i!=3){
@@ -309,6 +335,7 @@ void swOnQuestionKeyPress(int i,char key){
     }
   }
 }
+
 void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 0, bool lcdClear = LCD_NO_CLEAR)
 {
   if (lcdClear)
@@ -319,6 +346,7 @@ void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 
   lcd.print(msg);
   delay(Delay);
 }
+
 void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay = 0, uint msg2Delay = 0)
 { 
   lcd1LineMsg(firstMsg, msg1CursorCharAt, msg1CursorLineAt, msg1Delay, LCD_CLEAR);
@@ -327,8 +355,10 @@ void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte 
 
 void init0(){
   Serial.begin(9600);                   // Used to type in characters
+  Wire.begin();
   lcd.begin(16, 2);                     // initialize the dimensions of display
 }
+
 void questionMsg(int& i){
   isEnterActive = false;
   String sub1 = lcdQuestionsArray[i].substring(0, 16);
@@ -338,6 +368,7 @@ void questionMsg(int& i){
   lcd2LineMsg(sub1, sub2, 0, 0, 0, 1, 0, delay2K);
   lcd1LineMsg(lcdTypingSentences[i], 0, 0, 0, LCD_CLEAR);
 }
+
 void ckCalcDist(int& i){
   totalRounds = round(lcdAnswearsArray[i].toFloat() / 28);
   uint calcDist = (totalRounds * actualFieldLength) + ((totalRounds - 1) * 28);
@@ -354,7 +385,6 @@ void ckCalcDist(int& i){
   }
 }
 
-
 void ckPlantRate(int& i){
   float calc = actualFieldLength * totalRounds; //auto calc for plant rate
   plantRate = round(calc / lcdAnswearsArray[i - 1].toInt());
@@ -366,6 +396,7 @@ void ckPlantRate(int& i){
     ++i; //  jump to the next itteration and avoid last question
   }
 }
+
 void ckKeypadAns(int& i, String keypadAns, uint firstBound, uint secondBound, String boundsAns)
 {
   // tmpAns exists to avoid decreasing i twise
@@ -408,3 +439,74 @@ void ckKeypadAns(int& i, String keypadAns, uint firstBound, uint secondBound, St
   } // end of serialAns bounds OK!
 }
 
+void moveNplantThroughDesiredFieldLength(uint actFieldLength){
+  uint actualFieldDist = cmToHallDist(actFieldLength);
+  while(leftHallDist <= actualFieldDist &&  rightHallDist <= actualFieldDist){
+    Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
+    hallDistCalc(); //calculate hall left and right  distance
+    allignedMovementOfVehicle(); // try to align the movement of the vehicle
+    // Serial.println("First:" + String(leftHallDist)); 
+    // Serial.println("Second:" + String(rightHallDist));
+  }
+}
+
+ uint cmToHallDist(uint actualFieldLeng){
+  //  float tmp1 = actualFieldLeng;
+    float tmp =((float)actualFieldLeng  / (float) 0,1172741) ; //1 pulse = 0.1172741cm, float type cast is required in order to avoid warnings of the compiler
+    uint cm = round(tmp);
+    return cm;
+ }
+
+void hallDistCalc(){
+  first = "";
+  second = "";
+    while(Wire.available())    // slave may send less than requested
+    { 
+      
+      char c = Wire.read();
+      if(c!=','){
+        first+=c;
+      }else{
+         while(Wire.available()){
+          c=Wire.read();
+          second+=c;
+         }
+      }
+    }
+    byte cnt = 0;
+    for(int i = 0; i<first.length();i++){
+      if(!isDigit(first[i])){
+        cnt++;
+      }
+    }
+    first = first.substring(0,first.length()-cnt);
+    leftHallDist = first.toInt();
+    cnt = 0;
+    for(int i = 0; i<second.length();i++){
+      if(!isDigit(second[i])){
+        cnt++;
+      }
+    }
+    second = second.substring(0,second.length()-cnt);
+    rightHallDist = second.toInt();
+}
+
+void setMotorSpeedLeftToRight(byte left,byte right){
+  motorR.setSpeed(right);
+  motorL.setSpeed(left);
+  motorR.run(FORWARD);
+  motorL.run(FORWARD);
+}
+
+void allignedMovementOfVehicle(){
+  if(leftHallDist - rightHallDist>=10){
+    setMotorSpeedLeftToRight(100,235);
+    delay(25);
+  }else if(leftHallDist - rightHallDist<=10){
+    setMotorSpeedLeftToRight(235,100);
+    delay(25);
+  }else{
+    setMotorSpeedLeftToRight(235,235);
+    delay(25);
+  }
+}

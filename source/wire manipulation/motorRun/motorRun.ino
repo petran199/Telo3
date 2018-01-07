@@ -6,6 +6,7 @@ AF_DCMotor motorL(1,MOTOR12_1KHZ);
 AF_DCMotor motorR(2,MOTOR12_1KHZ);
 
 // HAll sensor values first is Left Hall second is Right Hall
+typedef unsigned int uint;
 String first="";
 String second="";
 int leftHallDist = 0;
@@ -20,38 +21,51 @@ void setup()
 }
 
 void loop(){
-  moveNplantThroughDesiredWidth(150);
+ while(leftHallDist <= 1330 &&  rightHallDist <= 1330){
+   Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
+   hallDistCalc(); //calculate hall left and right  distance
+  //  allignedMovementOfVehicle(); // try to align the movement of the vehicle
+    // Serial.println("First:" + String(leftHallDist)); 
+    // Serial.println("Second:" + String(rightHallDist));
+ }
+  // moveNplantThroughDesiredWidth(150);
   
   setMotorSpeedLeftToRight(0,0); //stop the engines
 }
 
 void moveNplantThroughDesiredWidth(uint actFieldLength){
-  uint actualFieldDist = cmTohallDist(actFieldLength);
+  uint actualFieldDist = cmToHallDist(actFieldLength);
   while(leftHallDist <= actualFieldDist &&  rightHallDist <= actualFieldDist){
     Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
     hallDistCalc(); //calculate hall left and right  distance
-    allignedMovementOfVehicle(); // try to align the movement of the vehicle
-    // Serial.println("First:" + String(leftHallDist)); 
-    // Serial.println("Second:" + String(rightHallDist));
+//    allignedMovementOfVehicle(); // try to align the movement of the vehicle
+     Serial.println("First:" + (String)leftHallDist); 
+     Serial.println("Second:" + (String)rightHallDist);
   }
 }
- uint cmTohallDist(uint actualFieldLeng){
-    double tmp = (actualFieldLeng / 0,1172741); //1 pulse = 0.1172741cm
+ uint cmToHallDist(uint actualFieldLeng){
+    double tmp = ((float) actualFieldLeng / (float)0,1172741); //1 pulse = 0.1172741cm
     uint cm = round(tmp);
     return cm;
  }
 void hallDistCalc(){
   first = "";
   second = "";
+  char c;
     while(Wire.available())    // slave may send less than requested
     { 
       
-      char c = Wire.read();
+       c = Wire.read();
       if(c!=','){
+          Serial.print(c);
         first+=c;
       }else{
+        Serial.println();
+        
          while(Wire.available()){
-          c=Wire.read();
+           c=Wire.read();
+          Serial.print(c);
+         
           second+=c;
          }
       }
@@ -64,6 +78,8 @@ void hallDistCalc(){
     }
     first = first.substring(0,first.length()-cnt);
     leftHallDist = first.toInt();
+//    Serial.println("First:" + String(leftHallDist)); 
+    
     cnt = 0;
     for(int i = 0; i<second.length();i++){
       if(!isDigit(second[i])){
@@ -72,6 +88,7 @@ void hallDistCalc(){
     }
     second = second.substring(0,second.length()-cnt);
     rightHallDist = second.toInt();
+//    Serial.println("Second:" + String(rightHallDist));
 }
 
 void setMotorSpeedLeftToRight(byte left,byte right){
@@ -93,5 +110,3 @@ void allignedMovementOfVehicle(){
     delay(25);
   }
 }
-
-
