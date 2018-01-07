@@ -89,6 +89,14 @@ String first="";
 String second="";
 int leftHallDist = 0;
 int rightHallDist = 0;
+// Hygrometer sensor stuff
+int hydroSensorPin = A0;
+byte hydroValuePercent(0);
+//Led photoresistor stuff..
+byte ledL = 11;
+byte ledR = 12;
+int photoresistorPin = A1;
+
 
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
@@ -115,7 +123,6 @@ void ckPlantRate(int& i); // handle plant rate question based on user's response
 void ckCalcDist(int& i); //calculates totalRounds and if it is out of bounds it prints msg and reset.. 
 void questionMsg(int& i);// prints each time the question that are stored on lcdQuestionsArray
 void init0();// simple initialization like serial.begin, wire begin, lcd.begin etc..
-// void checkAnswears(int& i);
 void checkAndPrintQuestion(int i,char key);// checks the user's answear based on the question of the system and prints them out . also informs user when he writes too many chars
 void swOnQuestionKeyPress(int i,char key);// switch on every keypad key press and take actions
 void checkQuestion(int& i);//checks if user pushed a button as answear  and then runs ckKeypadAns func
@@ -128,13 +135,16 @@ uint cmToHallDist(uint actualFieldLeng);// conver  centimeters to Hall measure s
 void hallDistCalc(); // reads the response of hall slave arduino and put its values to first, second, leftHallDist, rightHallDist vars
 void setMotorSpeedLeftToRight(byte left,byte right);// set the speed of left and right motor
 void allignedMovementOfVehicle();// based on  hallSensors' values, trying to stabilise the difference of them to be equal to zero and move the car in straight line
+byte cnvHydroValToPercent(int sensorValOfHydro);// converts the the sensor value of Hydrometer to percentage
+void checkHydroValue();//checks for hydrometer values and if it's Greater than 50 continues else prints warning msg
+void ckLightsOfCar(); // checks if there is a need to turn the lights on or off in the begining
 
 /*----------( END_OF_FUNCTION_DECLARATIONS ) ----------*/
 
 void setup() /*----( SETUP: RUNS ONCE )----*/
 {
    init0(); //initialization
-   //TODO check photoresistor...
+   ckLightsOfCar();// check photoresistor to turn lights on
    lcd2LineMsg("Give the pass...","Password:",0,0,0,1,0,0);
    while(keypadReadAnswear!=passwords[0] && keypadReadAnswear!= passwords[1]){
       while(!isEnterActive){
@@ -155,12 +165,8 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
       }
       checkPassword();
     }
- 
   checkModeAndPrintMsg();
-  
-  //TODO write func that checks Hydro and print msg
- 
-
+  checkHydroValue();// checks Hydro and print msg
   // start writing the answears on lcd
   for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++)
   {
@@ -190,12 +196,29 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
 void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 {
   
-  moveNplantThroughDesiredFieldLength(actualFieldLength);//move through user's desired field length
+  // moveNplantThroughDesiredFieldLength(actualFieldLength);//move through user's desired field length
   
-  setMotorSpeedLeftToRight(0,0); //stop the engines afthe completion
+  // setMotorSpeedLeftToRight(0,0); //stop the engines afthe completion
 } /* --(end main loop )-- */
 
 /* ( Function Definition ) */
+void checkHydroValue(){
+  hydroValuePercent = cnvHydroValToPercent(analogRead(hydroSensorPin));
+  if(hydroValuePercent>=50){
+    lcd1LineMsg(("humidity is:"+String(hydroValuePercent)+"%"),0,0,delay1K,LCD_CLEAR);
+  }
+  while(hydroValuePercent<50){
+   lcd1LineMsg(("humidity is:"+String(hydroValuePercent)+"%"),0,0,delay2K,LCD_CLEAR);
+   lcd2LineMsg("humidity is low","Water the ground",0,0,0,1,0,delay1K);
+   hydroValuePercent = cnvHydroValToPercent(analogRead(hydroSensorPin));
+  }
+  lcd2LineMsg("Bingo!!!",("humidity is:"+String(hydroValuePercent)+"%"),0,0,0,1,0,delay2K);
+}
+
+byte cnvHydroValToPercent(int sensorValOfHydro){
+  byte percVal = map(sensorValOfHydro,430,1023,100,0);
+  return percVal;
+}
 
 void checkModeAndPrintMsg(){
   lcd1LineMsg("Bingo!",0,0,0,LCD_CLEAR);
@@ -357,6 +380,8 @@ void init0(){
   Serial.begin(9600);                   // Used to type in characters
   Wire.begin();
   lcd.begin(16, 2);                     // initialize the dimensions of display
+  digitalWrite(ledL, LOW);//lights off
+  digitalWrite(ledR, LOW);//lights off
 }
 
 void questionMsg(int& i){
@@ -508,5 +533,13 @@ void allignedMovementOfVehicle(){
   }else{
     setMotorSpeedLeftToRight(235,235);
     delay(25);
+  }
+}
+
+void ckLightsOfCar(){
+  if(analogRead(photoresistorPin)<=10){
+    digitalWrite(ledL, HIGH);
+    digitalWrite(ledR, HIGH);
+
   }
 }
