@@ -16,8 +16,6 @@
 typedef unsigned int uint;// create an shortcut about the desired type
 #define LCD_CLEAR 1    // usefull for 1lineMsg if u want to use lcd.clear cmd or not
 #define LCD_NO_CLEAR 0 // and this one if you dont want to use lcd.cler cmd
-// #define CONTAINS_CM 1
-// #define NO_CM 0
 #define delay2K 2000   // 2k delay on a variety of functions
 #define delay1K 1000   // 1k delay on a variety of functions
 #define delay1_5K 1500 // 1.5k delay on a variety of functions
@@ -83,6 +81,12 @@ byte hydroValuePercent(0);
 byte ledL = 4;
 byte ledR = 3;
 int photoresistorPin = A1;
+//Encoder Hall Sensor stuff
+const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
+const byte encoder0pinB = 1;//B pin -> the digital pin 8
+int encoder0PinALast;
+volatile int duration0(0);//the number of the pulses
+boolean Direction0(true);//the rotation direction 
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
 /*-----( Declare objects )-----*/
@@ -129,7 +133,11 @@ void finalMsgAndCLoseScreen(); // prints the final msg to user about the plant r
 
 void setup() /*----( SETUP: RUNS ONCE )----*/
 {
-   init0(); //initialization of screen, pins etc..
+  init0();
+  //  while(1){
+  //   setMotorSpeedLeftToRight(235,235);
+  //  }
+    //initialization of screen, pins etc..
    ckLightsOfCar();// check photoresistor to turn lights on
    handlePassAndPrintMsg();// handles the user keypresses and print msg to screen
    checkModeAndPrintMsg();//chekcs user or maintenance mode and take apropriate actions based on requirments
@@ -146,6 +154,35 @@ void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 } /* --(end main loop )-- */
 
 /* ( Function Definition ) */
+void wheelSpeed0()//TODO check to see whats wrong with hall measurements
+{
+  int Lstate0 = digitalRead(encoder0pinA);
+  if((encoder0PinALast == LOW) && Lstate0==HIGH)
+  {
+    int val0 = digitalRead(encoder0pinB);
+    if(val0 == LOW && !Direction0)
+    {
+      Direction0 = true; //Reverse
+    }
+    else if(val0 == HIGH && Direction0)
+    {
+      Direction0 = false;  //Forward
+    }
+  }
+  encoder0PinALast = Lstate0;
+  if(!Direction0)  duration0++;
+  else  duration0--;
+  duration0++;
+  Serial.println("Right:"+String(duration0));
+}
+
+void EncoderInit0()
+{
+  Direction0 = true;//default -> Forward  
+  pinMode(encoder0pinB,INPUT);  
+  attachInterrupt(0, wheelSpeed0, CHANGE);
+}
+
 void printQAndCkUserResponse(){
   for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++)
   {
@@ -379,6 +416,7 @@ void init0(){
   lcd.begin(16, 2);                     // initialize the dimensions of display
   digitalWrite(ledL, LOW);//lights off
   digitalWrite(ledR, LOW);//lights off
+  // EncoderInit0();
 }
 
 void questionMsg(int& i){
@@ -463,6 +501,7 @@ void ckKeypadAns(int& i, String keypadAns, uint firstBound, uint secondBound, St
 
 void moveNplantThroughDesiredFieldLength(uint actFieldLength){
   uint actualFieldDist = cmToHallDist(actFieldLength);
+  Serial.println(actualFieldDist); 
   while(leftHallDist <= actualFieldDist &&  rightHallDist <= actualFieldDist){
     Wire.requestFrom(5, 15);    // request 15 bytes from slave device #5
     hallDistCalc(); //calculate hall left and right  distance
