@@ -63,7 +63,7 @@ char keys[ROWS][COLS] = { // overview of the keypad keys that we need for object
     {'7', '8', '9', 'C'},
     {'*', '0', '#', 'D'}};
 byte rowPins[ROWS] = {13, 12, 11, 10};        //connect to the row pinouts of the keypad
-byte colPins[COLS] = {9, 8, 7, 6};            //connect to the column pinouts of the keypad
+byte colPins[COLS] = {3, 8, 7, 6};            //connect to the column pinouts of the keypad
 String lcdQuestionsArray[numbOfQuestions] = { // overview of Questions displayed to the User
     "Give the desired Length",
     "Give the desired Width",
@@ -74,7 +74,7 @@ String lcdAnswearsArray[numbOfAnswears] = {""}; // here we will keep the answear
 String keypadReadAnswear = "";                // initialise the var that keeps temporar answear of User
 String tmpPass = "";    // used to turn the numbers that user press on keypad to asterisk (*)
 String userPassAns = "";
-String passwords[] = {"1111", "0000"};        //1111 User Mode , 0000 Maintenance Mode
+String passwords[] = {"8888", "0000"};        //1111 User Mode , 0000 Maintenance Mode
 String mode[] = {"User mode", "Maintenance mode"};
 bool isEnterActive(false);        // check if enter is pressed
 String lcdTypingSentences[numbOfQuestions] = { //used in some functions related to the question above
@@ -93,8 +93,8 @@ int rightHallDist = 0;
 int hydroSensorPin = A0;
 byte hydroValuePercent(0);
 //Led photoresistor stuff..
-byte ledL = 11;
-byte ledR = 12;
+byte ledL = 4;
+byte ledR = 5;
 int photoresistorPin = A1;
 
 
@@ -537,7 +537,7 @@ void allignedMovementOfVehicle(){
 }
 
 void ckLightsOfCar(){
-  if(analogRead(photoresistorPin)<=10){
+  if(analogRead(photoresistorPin)<=50){
     digitalWrite(ledL, HIGH);
     digitalWrite(ledR, HIGH);
 
