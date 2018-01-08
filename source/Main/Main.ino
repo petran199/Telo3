@@ -6,28 +6,21 @@
 */
 
 /*-----( Import needed libraries )-----*/
-
-#include <Wire.h> // Comes with Arduino IDE
-#include <LiquidCrystal_I2C.h>
-#include <Keypad.h>
-#include <AFMotor.h>
-
+#include <Wire.h> // library for intercomunication of arduinos via sda and scl ports
+#include <LiquidCrystal_I2C.h>// the lcd libray
+#include <Keypad.h>// the keypad library
+#include <AFMotor.h>// the motorshield library to move motor wheels and servo , stepper motors that are attached to it
 /*----------( END_OF_IMPORT_LIBRARIES ) ----------*/
 
 /*-----( #defines and utiliities )-----*/
-
-typedef unsigned int uint;
-
+typedef unsigned int uint;// create an shortcut about the desired type
 #define LCD_CLEAR 1    // usefull for 1lineMsg if u want to use lcd.clear cmd or not
 #define LCD_NO_CLEAR 0 // and this one if you dont want to use lcd.cler cmd
-
-#define CONTAINS_CM 1
-#define NO_CM 0
-
+// #define CONTAINS_CM 1
+// #define NO_CM 0
 #define delay2K 2000   // 2k delay on a variety of functions
 #define delay1K 1000   // 1k delay on a variety of functions
 #define delay1_5K 1500 // 1.5k delay on a variety of functions
-
 //      length lower-upper bounds
 #define lengthLB 60
 #define lengthUB 25000
@@ -40,30 +33,24 @@ typedef unsigned int uint;
 //
 #define plantRateLB 6 // changed ean kaneis praxeis to min einai 6..
 #define calcDistUB 25000 // uper bound of calculate distance 
-
 #define passMaxChar 7 // max characters that user can fill up on keypad as password
-
 /*----------( END_OF_#DEFINES_AND_UTILITIES_DECLARATIONS ) ----------*/
 
 /*-----( Declare Constants )-----*/
-// keypad constants
 const byte ROWS(4); // number of Rows of keypad
 const byte COLS(4); // nuber of Columns of keypad
-
 const byte numbOfQuestions(5); // number of the array in lcdQuestionsArray
 const byte numbOfAnswears(5);  // number of the array in lcdAnswearsArray
-
 /*----------( END_OF_CONSTANTS_DECLARATIONS ) ----------*/
 
 /*-----( Declare Variables )-----*/
-
 char keys[ROWS][COLS] = { // overview of the keypad keys that we need for object declaration
     {'1', '2', '3', 'A'},
     {'4', '5', '6', 'B'},
     {'7', '8', '9', 'C'},
     {'*', '0', '#', 'D'}};
 byte rowPins[ROWS] = {13, 12, 11, 10};        //connect to the row pinouts of the keypad
-byte colPins[COLS] = {3, 8, 7, 6};            //connect to the column pinouts of the keypad
+byte colPins[COLS] = {8, 7, 6, 5};            //connect to the column pinouts of the keypad
 String lcdQuestionsArray[numbOfQuestions] = { // overview of Questions displayed to the User
     "Give the desired Length",
     "Give the desired Width",
@@ -94,10 +81,8 @@ int hydroSensorPin = A0;
 byte hydroValuePercent(0);
 //Led photoresistor stuff..
 byte ledL = 4;
-byte ledR = 5;
+byte ledR = 3;
 int photoresistorPin = A1;
-
-
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
 /*-----( Declare objects )-----*/
@@ -108,7 +93,6 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 AF_DCMotor motorL(1,MOTOR12_1KHZ);// left motor
 AF_DCMotor motorR(2,MOTOR12_1KHZ);//right motor
-
 /*----------( END_OF_OBJECT_DECLARATIONS ) ----------*/
 
 /*-----( Declare Functions )-----*/
@@ -138,36 +122,31 @@ void allignedMovementOfVehicle();// based on  hallSensors' values, trying to sta
 byte cnvHydroValToPercent(int sensorValOfHydro);// converts the the sensor value of Hydrometer to percentage
 void checkHydroValue();//checks for hydrometer values and if it's Greater than 50 continues else prints warning msg
 void ckLightsOfCar(); // checks if there is a need to turn the lights on or off in the begining
-
+void handlePassAndPrintMsg();// check the user's password and print apropriate msg to screen
+void printQAndCkUserResponse();//prints the questions and check  the user answear to be between bounds and continue
+void finalMsgAndCLoseScreen(); // prints the final msg to user about the plant rate and the lets start.. then after a while closes the screen
 /*----------( END_OF_FUNCTION_DECLARATIONS ) ----------*/
 
 void setup() /*----( SETUP: RUNS ONCE )----*/
 {
-   init0(); //initialization
+   init0(); //initialization of screen, pins etc..
    ckLightsOfCar();// check photoresistor to turn lights on
-   lcd2LineMsg("Give the pass...","Password:",0,0,0,1,0,0);
-   while(keypadReadAnswear!=passwords[0] && keypadReadAnswear!= passwords[1]){
-      while(!isEnterActive){
-        if (kpd.getKeys())
-        {
-          for (int i=0; i<LIST_MAX; i++)   // Scan the whole key list.
-          {
-              if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
-              {
-                switch (kpd.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
-                case PRESSED:
-                   swOnPassKeyPress(kpd.key[i].kchar);
-                break;
-                }
-              }
-            }
-        }
-      }
-      checkPassword();
-    }
-  checkModeAndPrintMsg();
-  checkHydroValue();// checks Hydro and print msg
-  // start writing the answears on lcd
+   handlePassAndPrintMsg();// handles the user keypresses and print msg to screen
+   checkModeAndPrintMsg();//chekcs user or maintenance mode and take apropriate actions based on requirments
+   checkHydroValue();// checks Hydro and print msg
+   printQAndCkUserResponse(); // start writing the answears on lcd and check user answears
+   finalMsgAndCLoseScreen(); //prints the plant rate and lets start msg and then closes the screen
+} /*--(end setup )---*/
+
+void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
+{
+  // moveNplantThroughDesiredFieldLength(actualFieldLength);//move through user's desired field length
+  
+  // setMotorSpeedLeftToRight(0,0); //stop the engines afthe completion
+} /* --(end main loop )-- */
+
+/* ( Function Definition ) */
+void printQAndCkUserResponse(){
   for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++)
   {
     questionMsg(i);
@@ -189,19 +168,37 @@ void setup() /*----( SETUP: RUNS ONCE )----*/
     }
     checkQuestion(i);
   }
-  lcd1LineMsg("Let's start...", 0, 1, delay2K * 3, LCD_NO_CLEAR);
+}
+
+void finalMsgAndCLoseScreen(){
+  lcd1LineMsg("Let's start...", 0, 1, delay2K * 2, LCD_NO_CLEAR);
   lcd.clear();
-} /*--(end setup )---*/
+  lcd.off();
+}
 
-void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
-{
-  
-  // moveNplantThroughDesiredFieldLength(actualFieldLength);//move through user's desired field length
-  
-  // setMotorSpeedLeftToRight(0,0); //stop the engines afthe completion
-} /* --(end main loop )-- */
+void handlePassAndPrintMsg(){
+  lcd2LineMsg("Give the pass...","Password:",0,0,0,1,0,0);
+  while(keypadReadAnswear!=passwords[0] && keypadReadAnswear!= passwords[1]){
+    while(!isEnterActive){
+      if (kpd.getKeys())
+      {
+        for (int i=0; i<LIST_MAX; i++)   // Scan the whole key list.
+        {
+            if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
+            {
+              switch (kpd.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
+              case PRESSED:
+                 swOnPassKeyPress(kpd.key[i].kchar);
+              break;
+              }
+            }
+          }
+      }
+    }
+    checkPassword();
+  }
+}
 
-/* ( Function Definition ) */
 void checkHydroValue(){
   hydroValuePercent = cnvHydroValToPercent(analogRead(hydroSensorPin));
   if(hydroValuePercent>=50){
