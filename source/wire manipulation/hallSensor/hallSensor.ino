@@ -9,7 +9,7 @@ String tmp="";// save temporar values of hall values
 //const byte encoder0pinC = 7;//A pin -> the interrupt pin 1
 //const byte encoder0pinD = 5;//B pin -> the digital pin 9
 
-int encoder0PinALast;
+int encoder0PinALast(0);
 //int encoder1PinALast;
 
 volatile int duration0(0);//the number of the pulses
@@ -26,27 +26,27 @@ void setup()
   Serial.begin(9600);
   EncoderInit0();//Initialize the module0
 //  EncoderInit1();//Initialize the module1
-//  Wire.onRequest(requestHandler);
+ Wire.onRequest(requestHandler);
 }
 
 void loop(){
 //  interrupts();    // or use sei(); to Enables interrupts
 //delay (1000);     //Wait 1 second
 //noInterrupts();
-Serial.println("Left:"+String(duration0));
+// Serial.println("Left:"+String(duration0));
 //Serial.println("Right:"+String(duration1));
-//delay(1000);
+delay(100);
 
 }
 
-//void requestHandler(){
-//  tmp = (String(duration0)+","+String(duration1));
-//  const char* c = tmp.c_str();
-////  Serial.print(c);
-////  Serial.println();
-//  Wire.write(c);
-//
-//}
+void requestHandler(){
+ tmp = (String(duration0)+","+String(duration1));
+ const char* c = tmp.c_str();
+//  Serial.print(c);
+//  Serial.println();
+ Wire.write(c);
+
+}
 //------------------------Sinartiseis Hall Sensors---------------------------
 
 void EncoderInit0()
@@ -82,7 +82,7 @@ void wheelSpeed0()
   if(!Direction0)  duration0++;
   else  duration0--;
   duration0++;
-//Serial.println("Left:"+String(duration0));
+Serial.println("Left:"+String(duration0));
 }
 //
 //void wheelSpeed1()

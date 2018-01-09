@@ -42,6 +42,9 @@ const byte numbOfAnswears(5);  // number of the array in lcdAnswearsArray
 /*----------( END_OF_CONSTANTS_DECLARATIONS ) ----------*/
 
 /*-----( Declare Variables )-----*/
+/*
+   keypad & screen variables
+*/
 char keys[ROWS][COLS] = { // overview of the keypad keys that we need for object declaration
     {'1', '2', '3', 'A'},
     {'4', '5', '6', 'B'},
@@ -69,24 +72,33 @@ uint upperBounds[numbOfQuestions] = {lengthUB, widthUB, numbOfTreesUB, 1, 0};   
 uint totalRounds(0);       //Number of courses in Specifications 2.2.5
 uint actualFieldLength(0); //Length of courses in Specifications 2.2.5
 uint plantRate(0);  
-// HAll sensor values first is Left Hall second is Right Hall
+/* 
+  HAll sensor variables, first is Left Hall second is Right Hall
+*/
 String first="";
 String second="";
 int leftHallDist = 0;
 int rightHallDist = 0;
-// Hygrometer sensor stuff
+/*
+  Hygrometer sensor variables 
+*/
 int hydroSensorPin = A0;
 byte hydroValuePercent(0);
-//Led photoresistor stuff..
+/*
+  Led photoresistor variables
+*/
 byte ledL = 4;
 byte ledR = 3;
 int photoresistorPin = A1;
-//Encoder Hall Sensor stuff
-const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
-const byte encoder0pinB = 1;//B pin -> the digital pin 8
-int encoder0PinALast;
-volatile int duration0(0);//the number of the pulses
-boolean Direction0(true);//the rotation direction 
+/*
+  Encoder Hall Sensor variables
+*/
+const byte encoderpinA = 3;//A pin -> the interrupt pin 0
+const byte encoderpinB = 10;//B pin -> the digital pin 8
+int encoderPinALast(0);
+volatile int duration(0);//the number of the pulses
+boolean Direction(true);//the rotation direction 
+
 /*----------( END_OF_VARIABLE_DECLARATIONS ) ----------*/
 
 /*-----( Declare objects )-----*/
@@ -133,11 +145,17 @@ void finalMsgAndCLoseScreen(); // prints the final msg to user about the plant r
 
 void setup() /*----( SETUP: RUNS ONCE )----*/
 {
-  init0();
-  //  while(1){
-  //   setMotorSpeedLeftToRight(235,235);
-  //  }
-    //initialization of screen, pins etc..
+  motorR.setSpeed(255);
+  motorL.setSpeed(255);
+  motorR.run(FORWARD);
+  motorL.run(FORWARD);
+  // setMotorSpeedLeftToRight(150,150);
+  init0();//initialization of screen, pins etc..
+  
+   while(1){
+    Serial.println("Right:"+String(duration));
+    delay(100);
+   }
    ckLightsOfCar();// check photoresistor to turn lights on
    handlePassAndPrintMsg();// handles the user keypresses and print msg to screen
    checkModeAndPrintMsg();//chekcs user or maintenance mode and take apropriate actions based on requirments
@@ -154,33 +172,34 @@ void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 } /* --(end main loop )-- */
 
 /* ( Function Definition ) */
-void wheelSpeed0()//TODO check to see whats wrong with hall measurements
+
+void wheelSpeed()//TODO check to see whats wrong with hall measurements
 {
-  int Lstate0 = digitalRead(encoder0pinA);
-  if((encoder0PinALast == LOW) && Lstate0==HIGH)
+  int Lstate = digitalRead(encoderpinA);
+  if((encoderPinALast == LOW) && Lstate==HIGH)
   {
-    int val0 = digitalRead(encoder0pinB);
-    if(val0 == LOW && !Direction0)
+    int val = digitalRead(encoderpinB);
+    if(val == LOW && !Direction)
     {
-      Direction0 = true; //Reverse
+      Direction = true; //Reverse
     }
-    else if(val0 == HIGH && Direction0)
+    else if(val == HIGH && Direction)
     {
-      Direction0 = false;  //Forward
+      Direction = false;  //Forward
     }
   }
-  encoder0PinALast = Lstate0;
-  if(!Direction0)  duration0++;
-  else  duration0--;
-  duration0++;
-  Serial.println("Right:"+String(duration0));
+  encoderPinALast = Lstate;
+  if(!Direction)  duration++;
+  else  duration--;
+  duration++;
+  // Serial.println("Right:"+String(duration));
 }
 
-void EncoderInit0()
+void EncoderInit()
 {
-  Direction0 = true;//default -> Forward  
-  pinMode(encoder0pinB,INPUT);  
-  attachInterrupt(0, wheelSpeed0, CHANGE);
+  Direction = true;//default -> Forward  
+  pinMode(encoderpinB,INPUT);  
+  attachInterrupt(digitalPinToInterrupt (encoderpinA), wheelSpeed, CHANGE);
 }
 
 void printQAndCkUserResponse(){
@@ -416,7 +435,7 @@ void init0(){
   lcd.begin(16, 2);                     // initialize the dimensions of display
   digitalWrite(ledL, LOW);//lights off
   digitalWrite(ledR, LOW);//lights off
-  // EncoderInit0();
+  EncoderInit();
 }
 
 void questionMsg(int& i){
