@@ -1,6 +1,0 @@
-{
-    "board": "arduino:avr:uno",
-    "sketch": "motorRun\\motorRun.ino",
-    "port": "COM5",
-    "output": "../../build"
-}
