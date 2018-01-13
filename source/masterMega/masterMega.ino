@@ -1,4 +1,4 @@
-/* @Main.ino
+/* @MasterMega.ino
 ||  This is the MasterMega.ino. In this file you can find code based on lcd, keypad, Servo and 
 ||  Adafruit Motor shield  libraries.
 ||  It is developed and maintained by Petros Chatzipetrou. Contributors are Sgouros Xristos and Nikos Kagasidis
@@ -32,7 +32,7 @@ typedef unsigned int uint; // create a shortcut of the specified type
 #define numbOfTreesLB 1
 #define numbOfTreesUB 6
 //
-#define plantRateLB 6    // changed ean kaneis praxeis to min einai 6..
+#define plantRateLB 6    // plantRate lower bound
 #define calcDistUB 25000 // uper bound of calculate distance
 #define passMaxChar 7    // max characters that user can fill up on keypad as password
 /*----------( END_OF_#DEFINES_AND_UTILITIES_DECLARATIONS ) ----------*/
@@ -95,7 +95,7 @@ String second = "";    // this is for right hall encoder
 int leftHallDist = 0;  // this is the integer representation of variable first
 int rightHallDist = 0; // this is the integer representation of variable second
 /* 
-    arm variables - the beneath is a contribution by Xristos Sgouros
+    arm variables - the beneath variables are a contribution by Xristos Sgouros
 */
 byte BSpos = 140; // Starting position for Body
 byte SSpos = 45;  // Starting position for Shoulder
@@ -120,7 +120,7 @@ Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 AF_DCMotor motorL(1); // left motor on motorShield 1 slot
 AF_DCMotor motorR(2); //right motor on motorShield 2 slot
 // servo motors objects to controll the arm
-//the beneath is a contribution by Sgouros Xristos
+//the beneath declarations are a contribution from Sgouros Xristos
 Servo Body;     // create servo object control of the lower servo motor
 Servo Shoulder; // create servo object control of the right servo motor
 Servo Elbow;    // create servo object control of the left servo motor
@@ -136,44 +136,45 @@ void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay, b
 void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay, uint msg2Delay);
 //check the users answear about the bounds of length width plant rate etc..
 void ckKeypadAns(int &i, String keypadAns, uint firstBound, uint secondBound, String boundsAns);
-void ckPlantRate(int &i);                                    // handle plant rate question based on user's response.Manual or Auto?
-void ckCalcDist(int &i);                                     //calculates totalRounds and if it is out of bounds it prints msg and reset..
-void questionMsg(int &i);                                    // prints each time the question that are stored on lcdQuestionsArray
-void init0();                                                // simple initialization like serial.begin, wire begin, lcd.begin etc..
-void checkAndPrintQuestion(int i, char key);                 // checks the user's answear based on the question of the system and prints them out . also informs user when he writes too many chars
-void swOnQuestionKeyPress(int i, char key);                  // switch on every keypad key press and take actions
-void checkQuestion(int &i);                                  //checks if user pushed a button as answear  and then runs ckKeypadAns func
-void checkAndPrintPass(byte Passlength, char key);           // do the same work as checkAndPrintQuestion but based on password rules this time
-void swOnPassKeyPress(char key);                             // the same rules as swOnQuestionKeyPress but for password actions
-void checkPassword();                                        //the same as checkQuestion and then checks if user put the correct passwords
-void checkModeAndPrintMsg();                                 // check mode based on user's pasword and print apropriate msg to screen
-void handlePassAndPrintMsg();                                // check the user's password and print apropriate msg to screen
-void printQAndCkUserResponse();                              //prints the questions and check  the user answear to be between bounds and continue
-void finalMsgAndCLoseScreen();                               // prints the final msg to user about the plant rate and the lets start.. then after a while closes the screen
-byte cnvHydroValToPercent(int sensorValOfHydro);             // This function is a contribution from Nikos Kagasidis. It converts the the sensor value of Hydrometer to percentage
-void checkHydroValue();                                      //checks for hydrometer values and if it's Greater than 50 continues else prints warning msg
-void ckLightsOfCar();                                        // checks if there is a need to turn the lights on or off in the begining
-void Plant();                                                //this function is a contribution from Xristos Sgouros . Used for doing the plant process with the arm. It grabs a tree and put it in the hole using the servo motors
-void setMotorSpeedLeftToRight(byte left, byte right);        // sets the motors speed (0-255) first argument controlls th left motor and the second the right one
+void ckPlantRate(int &i);                                         // handle plant rate question based on user's response.Manual or Auto?
+void ckCalcDist(int &i);                                          //calculates totalRounds and if it is out of bounds it prints msg and reset..
+void questionMsg(int &i);                                         // prints each time the question that are stored on lcdQuestionsArray
+void init0();                                                     // simple initialization like serial.begin, wire begin, lcd.begin etc..
+void checkAndPrintQuestion(int i, char key);                      // checks the user's answear based on the question of the system and prints them out . also informs user when he writes too many chars
+void swOnQuestionKeyPress(int i, char key);                       // switch on every keypad key press and take actions
+void checkQuestion(int &i);                                       //checks if user pushed a button as answear  and then runs ckKeypadAns func
+void checkAndPrintPass(byte Passlength, char key);                // do the same work as checkAndPrintQuestion but based on password rules this time
+void swOnPassKeyPress(char key);                                  // the same rules as swOnQuestionKeyPress but for password actions
+void checkPassword();                                             //the same as checkQuestion and then checks if user put the correct passwords
+void checkModeAndPrintMsg();                                      // check mode based on user's pasword and print apropriate msg to screen
+void handlePassAndPrintMsg();                                     // check the user's password and print apropriate msg to screen
+void printQAndCkUserResponse();                                   //prints the questions and check  the user answear to be between bounds and continue
+void finalMsgAndCLoseScreen();                                    // prints the final msg to user about the plant rate and the lets start.. then after a while closes the screen
+byte cnvHydroValToPercent(int sensorValOfHydro);                  // This function is a contribution from Nikos Kagasidis. It converts the the sensor value of Hydrometer to percentage
+void checkHydroValue();                                           //checks for hydrometer values and if it's Greater than 50 continues else prints warning msg
+void ckLightsOfCar();                                             // checks if there is a need to turn the lights on or off in the begining
+void Plant();                                                     //this function is a contribution from Xristos Sgouros . Used for doing the plant process with the arm. It grabs a tree and put it in the hole using the servo motors
+void setMotorSpeedLeftToRight(byte left, byte right);             // sets the motors speed (0-255) first argument controlls th left motor and the second the right one
 void moveNplantThroughDesiredFieldLength(uint actualFieldLength); // moves across the desired user input of field length and doing the plant process in paralell
-uint cmToHallDist(uint actualFieldLeng);                     // tranpiles the cm from user acttual field length input to Hall encoder pulses
-void hallDistCalc();                                         // transfers data from slave hall encoder to the master and then updates the leftHallDist and rightHallDist variables
-void stopOrStartEngines(byte val);                           // based on value of argument (0 or 1) starts engines if val = 1 and stops engines if val = 0
+uint cmToHallDist(uint actualFieldLeng);                          // tranpiles the cm from user acttual field length input to Hall encoder pulses
+void hallDistCalc();                                              // transfers data from slave hall encoder to the master and then updates the leftHallDist and rightHallDist variables
+void stopOrStartEngines(byte val);                                // based on value of argument (0 or 1) starts engines if val = 1 and stops engines if val = 0
 /*----------( END_OF_FUNCTION_DECLARATIONS ) ----------*/
 
 void setup() /*----( SETUP: RUNS ONCE )----*/
 {
     init0();                   //initialization of screen, pins etc..
-                               //  handlePassAndPrintMsg();   // handles the user keypresses and print msg to screen
-                               //  checkModeAndPrintMsg();    //chekcs user or maintenance mode and take apropriate actions based on requirments
-                               //  checkHydroValue();         // checks Hydro and print msg
+    handlePassAndPrintMsg();   // handles the user keypresses and print msg to screen
+    checkModeAndPrintMsg();    //chekcs user or maintenance mode and take apropriate actions based on requirments
+    checkHydroValue();         // checks Hydro and print msg
     printQAndCkUserResponse(); // start writing the answears on lcd and check user answears
     finalMsgAndCLoseScreen();  //prints the plant rate and lets start msg and then closes the screen
     ckLightsOfCar();           // check photoresistor to turn lights on
-    if(plantRate%2 !=0){
-        plantRate+=1;
+    if (plantRate % 2 != 0)    // plant rate should be even numb cause we observerd that hall encoder gives even outcome of pulses(0,2,4,8,12, etc..), so in order to be devided with plantRate val, we make the plantRate val even.
+        plantRate += 1;
     }
-} /*--(end setup )---*/
+} /*--(end setup )---*/when we use round()
+    {
 
 void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 {
@@ -181,8 +182,18 @@ void loop() /*----( LOOP: RUNS CONSTANTLY )----*/
 
 } /* --(end main loop )-- */
 
-/* ( Function Definition ) */
+/* ---------- ( Function Definition )----------- */
 
+/* 
+@function
+@abstract Writes to screen one line message.
+
+@param  msg | The message u want to write on screen.Be carefull, don't exceed 16chars.
+@param  cursorCharAt | The place you want to put the curson on the screen (0-16).
+@param  cursorLineAt | The line you want to sellect (0-1). 
+@param  Delay | The delay you want to keep the message on the screen. By default this values is 0.
+@param  lcdClear | If you want to clear the screen before displaying your. By default it doesn't clear the screen.
+*/
 void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 0, bool lcdClear = LCD_NO_CLEAR)
 {
     if (lcdClear)
@@ -194,12 +205,37 @@ void lcd1LineMsg(String msg, byte cursorCharAt, byte cursorLineAt, uint Delay = 
     delay(Delay);
 }
 
+/* 
+@function
+@abstract Writes to screen two line messages.
+
+@param  firstMsg | The  first line message u want to write on screen.Be carefull, don't exceed 16chars.
+@param  secondMsg | The  second line message u want to write on screen.Be carefull, don't exceed 16chars.
+@param  msg1CursorCharAt | The place you want to put the curson on the screen (0-16) of the first line message.
+@param  msg1CursorLineAt | The first message line you want to sellect (0-1).
+@param  msg2CursorCharAt | The place you want to put the curson on the screen (0-16) of the second line message.
+@param  msg2CursorLineAt | The second message line you want to sellect (0-1).
+@param  msg1Delay | The delay you want to keep the message on the screen of the first message. By default this values is 0.
+@param  msg2Delay | The delay you want to keep the message on the screen of the first message. By default this values is 0.
+*/
 void lcd2LineMsg(String firstMsg, String secondMsg, byte msg1CursorCharAt, byte msg1CursorLineAt, byte msg2CursorCharAt, byte msg2CursorLineAt, uint msg1Delay = 0, uint msg2Delay = 0)
 {
     lcd1LineMsg(firstMsg, msg1CursorCharAt, msg1CursorLineAt, msg1Delay, LCD_CLEAR);
     lcd1LineMsg(secondMsg, msg2CursorCharAt, msg2CursorLineAt, msg2Delay);
 }
 
+/* 
+@function
+@abstract   Checks the user answear from keypad.Checks for the bounds of the input values and warning the user in case he writes values out of bounds.
+            if everything is ok, saves the user input value to lcdAnswearsArray[] and consequently calculates the actual field length which is the field
+            Length  -  22cm (the vehicles length).
+
+@param  &i | keep track of the lcdQuestionsArray[] sequence.
+@param  keypadAns | Here we save user input value.
+@param  firstBound | This is the lower bound we want to have.
+@param  secondBound | This is the upper bound we want to have.
+@param  boundsAns | Here we put the asnwear we want to be in between the two bounds we declare.
+*/
 void ckKeypadAns(int &i, String keypadAns, uint firstBound, uint secondBound, String boundsAns)
 {
     // tmpAns exists to avoid decreasing i twise
@@ -220,8 +256,6 @@ void ckKeypadAns(int &i, String keypadAns, uint firstBound, uint secondBound, St
             lcd1LineMsg("Try again...", 0, 0, delay1_5K, LCD_CLEAR);
             // tmp is helpfull to turn the whole sentense that we wanna use into type String
             String lastSentenceToString = (String(firstBound) + "<" + boundsAns + "<" + String(secondBound));
-            // lastSentenceToString.co
-            // Serial.print(lastSentenceToString);
             lcd2LineMsg("Bounds between", lastSentenceToString, 0, 0, 0, 1, 0, delay2K);
         }
         --i;
@@ -250,6 +284,13 @@ void ckKeypadAns(int &i, String keypadAns, uint firstBound, uint secondBound, St
     } // end of serialAns bounds OK!
 }
 
+/* 
+@function
+@abstract   We check based on user inputs if the calculated distance in in bounds. If not we print message and then restart the system.
+            If it's in bounds, we print the calculated distance the car is going to run. We also calculate the total rounds variable
+
+@param  &i | keep track of the lcdQuestionsArray[] sequence.
+*/
 void ckCalcDist(int &i)
 {
     totalRounds = round(lcdAnswearsArray[i].toFloat() / 28);
@@ -267,6 +308,13 @@ void ckCalcDist(int &i)
     }
 }
 
+/* 
+@function
+@abstract   We check based on user inputs if the calculated distance in in bounds. If not we print message and then restart the system.
+            If it's in bounds, we print the calculated distance the car is going to run. We also calculate the total rounds variable
+
+@param  &i | keep track of the lcdQuestionsArray[] sequence.
+*/
 void ckPlantRate(int &i)
 {
     float calc = actualFieldLength * totalRounds; //auto calc for plant rate
@@ -280,6 +328,12 @@ void ckPlantRate(int &i)
     }
 }
 
+/* 
+@function
+@abstract   Prints the message based on lcdQuestionsArray[]
+
+@param  &i | keep track of the lcdQuestionsArray[] sequence.
+*/
 void questionMsg(int &i)
 {
     isEnterActive = false;
@@ -291,6 +345,10 @@ void questionMsg(int &i)
     lcd1LineMsg(lcdTypingSentences[i], 0, 0, 0, LCD_CLEAR);
 }
 
+/*
+@function
+@abstract   initialise pinModes, objects 
+*/
 void init0()
 {
     Serial.begin(115200);  // Used to type in characters to Serial monitor( usefull for debugging)
@@ -311,6 +369,14 @@ void init0()
     Grapple.write(GOpos);
 }
 
+/*
+@function
+@abstract   Cocatenates the key presses and check if the answear exceeds the maximum characters based on its bounds.
+            It prints user iput each time of a key press.
+
+@param  i |  keep track of the lcdQuestionsArray[] sequence.
+@param  key | put the key presses of keypad.
+*/
 void checkAndPrintQuestion(int i, char key)
 {
     if (keypadReadAnswear.length() < String(upperBounds[i]).length())
@@ -325,6 +391,13 @@ void checkAndPrintQuestion(int i, char key)
     }
 }
 
+/*
+@function
+@abstract   switch on  key press. Checks if the character is digit, letter, asterisk(*) or sharp(#) and calls checkAndPrintQuestion
+
+@param  i |  keep track of the lcdQuestionsArray[] sequence.
+@param  key | put the key presses of keypad.
+*/
 void swOnQuestionKeyPress(int i, char key)
 {
     if (isDigit(key))
@@ -380,6 +453,13 @@ void swOnQuestionKeyPress(int i, char key)
     }
 }
 
+
+/*
+@function
+@abstract   check if user answear is empty or not.If it is empty it means he pressed enter button(A). If  not, calls ckKeypadAns or ckPlantRate if param i is equal to 3
+
+@param  i |  keep track of the lcdQuestionsArray[] sequence.
+*/
 void checkQuestion(int &i)
 {
     if (keypadReadAnswear.length() <= 0)
@@ -402,6 +482,13 @@ void checkQuestion(int &i)
     }
 }
 
+/*
+@function
+@abstract   checks the password length to not exceed the maximum characters. Also print the password on screen in the form of asterisks(*) to obscure the real one.
+
+@param  Passlength |  the password maximum length you want to have
+@param  key | put the key presses of keypad.
+*/
 void checkAndPrintPass(byte Passlength, char key)
 {
     if (keypadReadAnswear.length() < Passlength)
@@ -421,6 +508,12 @@ void checkAndPrintPass(byte Passlength, char key)
     }
 }
 
+/*
+@function
+@abstract   switch on  key press. Checks if the character is digit, letter, asterisk(*) or sharp(#) and calls checkAndPrintPass
+
+@param  key | put the key presses of keypad.
+*/
 void swOnPassKeyPress(char key)
 {
     if (isDigit(key))
@@ -458,6 +551,10 @@ void swOnPassKeyPress(char key)
     }
 }
 
+/*
+@function
+@abstract   checks if the the password entered is valid (user or maintenance mode). And informs the user with apropriate message.
+*/
 void checkPassword()
 {
     if (keypadReadAnswear.length() <= 0)
@@ -482,6 +579,10 @@ void checkPassword()
     }
 }
 
+/*
+@function
+@abstract   Prints an apropriate message based on the chosen mode(user or maintenance).
+*/
 void checkModeAndPrintMsg()
 {
     lcd1LineMsg("Bingo!", 0, 0, 0, LCD_CLEAR);
@@ -504,6 +605,10 @@ void checkModeAndPrintMsg()
     }
 }
 
+/*
+@function
+@abstract   prints give the password message and the user answear each time he pressed a key. if he press enter(A), it calls checkPassword function.
+*/
 void handlePassAndPrintMsg()
 {
     lcd2LineMsg("Give the pass...", "Password:", 0, 0, 0, 1, 0, 0);
@@ -531,6 +636,10 @@ void handlePassAndPrintMsg()
     }
 }
 
+/*
+@function
+@abstract   prints the Questions of the lcdQuestionsArray[] and writes the user inputs on screen based on each question.If enter button is pressed(A), checkQuestion function is called.
+*/
 void printQAndCkUserResponse()
 {
     for (int i = 0; i < (sizeof(lcdQuestionsArray) / sizeof(lcdQuestionsArray[0])); i++)
@@ -558,6 +667,10 @@ void printQAndCkUserResponse()
     }
 }
 
+/*
+@function
+@abstract   prints Let's start message and closes the backlight and the monitor of the screen to save battery.
+*/
 void finalMsgAndCLoseScreen()
 {
     lcd1LineMsg("Let's start...", 0, 1, delay2K * 2, LCD_NO_CLEAR);
@@ -565,12 +678,22 @@ void finalMsgAndCLoseScreen()
     lcd.off();
 }
 
+/*
+@function
+@abstract   This function is a contibution from Nikos Kagasidis. It converts the hydrometer analog values(0-1023) to percentage
+
+@param  sensorValOfHydro | Here we put the analog value of the hydrometer.
+*/
 byte cnvHydroValToPercent(int sensorValOfHydro)
 {
     byte percVal = map(sensorValOfHydro, 430, 1023, 100, 0);
     return percVal;
 }
 
+/*
+@function
+@abstract   checks the percentage of the hydrometer and if it is < 50%, prints message about the low humidity.if it's > 50% prints Bingo! letting the system to go on.
+*/
 void checkHydroValue()
 {
     hydroValuePercent = cnvHydroValToPercent(analogRead(hydroSensorPin));
@@ -587,6 +710,10 @@ void checkHydroValue()
     lcd2LineMsg("Bingo!!!", ("humidity is:" + String(hydroValuePercent) + "%"), 0, 0, 0, 1, 0, delay2K);
 }
 
+/*
+@function
+@abstract   checks the photoresistor values. if it's <= 50, opens the lights of vehicle otherwise it's off.
+*/
 void ckLightsOfCar()
 {
     if (analogRead(photoresistorPin) <= 50)
@@ -596,6 +723,10 @@ void ckLightsOfCar()
     }
 }
 
+/*
+@function
+@abstract   This functions is a contribution from Sgouros Xristos. It moves the arm motors, letting the system pick a tree from the warehouse and put it in the hole.  
+*/
 void Plant()
 {
     //--------------Balance Position (A0)-------------------//               go to balance position
@@ -724,6 +855,13 @@ void Plant()
     delay(500);
 }
 
+/*
+@function
+@abstract   Sets the motors' speed and run forward.
+
+@param  left | the left motor set speed.
+@param  right | the right motor set speed.
+*/
 void setMotorSpeedLeftToRight(byte left, byte right)
 {
     motorR.setSpeed(right);
@@ -732,32 +870,37 @@ void setMotorSpeedLeftToRight(byte left, byte right)
     motorL.run(FORWARD);
 }
 
+/*
+@function
+@abstract   Here we put the actualFieldLength variable and  tranlate its centimeter value to Hall encoder pulses. Then we comunicate with the slave arduino requesting its Hall encoder values
+            if the hall encoder measurements doesn't reach the actualFieldLength value, runs the vehivle forward. While running checks for the plantRate variable
+            and stops the vehicle based on it to do the plant process. After reached the actualFieldLength value, stops the engines.
+
+@param  actFieldLength | we put the actualFieldLength variable value.
+*/
 void moveNplantThroughDesiredFieldLength(uint actFieldLength)
 {
-     
     uint actualFieldDist = cmToHallDist(actFieldLength);
-    // Serial.println("plantRate:"+String(plantRate));
-    // Serial.println("actualFieldDist:"+String(actualFieldDist));
-    while (rightHallDist <= actualFieldDist /*&&  rightHallDist <= actualFieldDist*/)
+    while (rightHallDist <= actualFieldDist)
     {
         setMotorSpeedLeftToRight(235, 235);
         Wire.requestFrom(5, 6, false); // request 6 bytes from slave device #5
         hallDistCalc();                //calculate hall left and right  distance
-        // Serial.println("Left:" + String(rightHallDist));
         if (rightHallDist % plantRate == 0 && rightHallDist >= plantRate)
         {
-            // setMotorSpeedLeftToRight(235, 235);
             setMotorSpeedLeftToRight(0, 0);
-            // Serial.println("leftHallDist%plantRate:" + String(rightHallDist % plantRate));
-            // Serial.println("leftHallDist" + String(rightHallDist));
-            // delay(3000);
             Plant();
         }
-        // setMotorSpeedLeftToRight(235, 235);
     }
     setMotorSpeedLeftToRight(0, 0);
 }
 
+/*
+@function
+@abstract   converts  centimeters to pulses.   
+
+@param  actualFieldLeng | we put the actualFieldLength variable to convert it in pulses.
+*/
 uint cmToHallDist(uint actualFieldLeng)
 {
     float tmp = ((float)actualFieldLeng / 0.05314); //1 pulse = 0.05314cm
@@ -765,6 +908,10 @@ uint cmToHallDist(uint actualFieldLeng)
     return cm;
 }
 
+/*
+@function
+@abstract   read from the slave arduino via wire comunication the data that the slave sends and save them to rightHallDist variable.
+*/
 void hallDistCalc()
 {
     first = "";
@@ -807,6 +954,12 @@ void hallDistCalc()
     // rightHallDist = second.toInt();
 }
 
+/*
+@function
+@abstract   stops or starts the engines based on parameter. if the parameter is 0, it opens a comunication with the slave arduino which has the motors attached to it and stop them. if it's 1, the engines start.
+
+@param  val | values between 0-1. 0 stops engines 1 starts engines.
+*/
 void stopOrStartEngines(byte val)
 {
     if (val == 0)
@@ -825,6 +978,3 @@ void stopOrStartEngines(byte val)
     {
     }
 }
-
-
-//  Serial.println();

@@ -1,75 +1,80 @@
-//i2c Master Code(HALL UNO)
+/* @hallSensor.ino
+||  This is the hallSensor.ino. In this file you can find code based on Hall encoder Sensor.
+||  It is developed and maintained by Petros Chatzipetrou. Contributors are Sgouros Xristos and Nikos Kagasidis
+||  It is a project in frames of the course TELO_3.
+||  It is started on 18.12.2017
+*/
+
+/*-----( Import needed libraries )-----*/
 #include <Wire.h>
-//-----------------------Diloseis Hall-----------------------------------//
-const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
-const byte encoder0pinB = 4;//B pin -> the digital pin 8
 
-String tmp="";// save temporar values of hall values
-
-//const byte encoder0pinC = 7;//A pin -> the interrupt pin 1
-//const byte encoder0pinD = 5;//B pin -> the digital pin 9
-
-int encoder0PinALast(0);
-//int encoder1PinALast;
-
-volatile int duration0(0);//the number of the pulses
+/*-----( Declare Variables )-----*/
+const byte encoderpinA = 2;//A pin -> the interrupt pin 0
+const byte encoderpinB = 4;//B pin -> the digital pin 4
+String tmp="";// save temporary the value of the duration 
+int encoderPinALast(0);// we save the last state of encoderpinA
+volatile int duration0(0);//the total number of the pulses
 boolean Direction0(true);//the rotation direction 
 
-//volatile int duration1(0);//the number of the pulses
-//boolean Direction1(true);//the rotation direction 
-//-----------------------------------------------------------------------//
-
-
-void setup()
+/*----( SETUP: RUNS ONCE )----*/
+void setup() 
 {
   Wire.begin(5);
   Serial.begin(115200);
-  EncoderInit0();//Initialize the module0
-//  EncoderInit1();//Initialize the module1
- Wire.onRequest(requestHandler);
+  EncoderInit();//Initialize the module
+  Wire.onRequest(requestHandler);
 }
 
+/*----( LOOP: RUNS CONSTANTLY )----*/
 void loop(){
 
-delay(10);
-
 }
 
+/* ---------- ( Function Definition )----------- */
+
+/* 
+@function
+@abstract save the duration to tmp variable  and then send it to the master via wire comunication.
+*/
 void requestHandler(){
- tmp = (String(duration0));//+","+String(duration1));
+ tmp = (String(duration));
  const char* c = tmp.c_str();
-//  Serial.print(c);
-//  Serial.println();
  Wire.write(c);
 
 }
-//------------------------Sinartiseis Hall Sensors---------------------------
 
-void EncoderInit0()
+/* 
+@function
+@abstract Initialise the pinModes and attach an interrupt service routine to encoder pin A
+*/
+void EncoderInit()
 {
-  Direction0 = true;//default -> Forward  
-  pinMode(encoder0pinB,INPUT);  
-  attachInterrupt(digitalPinToInterrupt(encoder0pinA), wheelSpeed0, CHANGE);
+  Direction = true;//default -> Forward  
+  pinMode(encoderpinB,INPUT);  
+  attachInterrupt(digitalPinToInterrupt(encoderpinA), wheelSpeed, CHANGE);
 }
 
-void wheelSpeed0()
+/* 
+@function
+@abstract checks for the direction of the vehicle and depends on that, increase or decrease duration variable. By doing so, we calculate the pulses of the hall encoder sensor.
+*/
+void wheelSpeed()
 {
-  int Lstate0 = digitalRead(encoder0pinA);
-  if((encoder0PinALast == LOW) && Lstate0==HIGH)
+  int Lstate = digitalRead(encoderpinA);
+  if((encoderPinALast == LOW) && Lstate==HIGH)
   {
-    int val0 = digitalRead(encoder0pinB);
-    if(val0 == LOW && !Direction0)
+    int val = digitalRead(encoderpinB);
+    if(val == LOW && !Direction)
     {
-      Direction0 = true; //Reverse
+      Direction = true; //Reverse
     }
-    else if(val0 == HIGH && Direction0)
+    else if(val == HIGH && Direction)
     {
-      Direction0 = false;  //Forward
+      Direction = false;  //Forward
     }
   }
-  encoder0PinALast = Lstate0;
-  if(!Direction0)  duration0++;
-  else  duration0--;
-  duration0++;
-// Serial.println("Left:"+String(duration0));
+  encoderPinALast = Lstate;
+  if(!Direction)  duration++;
+  else  duration--;
+  duration++;
 }
